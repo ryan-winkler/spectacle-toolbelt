@@ -74,6 +74,7 @@ Purpose:
 - `src/spectacle_toolbelt/scroll/session.py`
 - `servicemenus/io.github.ryanwinkler.spectacle-toolbelt-stitch.desktop`
 - `servicemenus/io.github.ryanwinkler.spectacle-toolbelt-open-in-spectacle.desktop`
+- `desktop/io.github.ryanwinkler.spectacle-toolbelt.desktop`
 - `scripts/install-local.sh`
 - `scripts/uninstall-local.sh`
 - `tests/test_cli.py`
@@ -125,7 +126,7 @@ Steps:
    - Replace “Toolbelt handles OCR/redaction/documentation capture” language with “Toolbelt orchestrates around Spectacle-owned annotation/OCR/QR/editor surfaces.”
    - Add a `What Spectacle Already Owns` section.
    - Add a `Native GUI Direction` section.
-   - State that external service-menu UX is a bridge, not the final product.
+   - State that external launcher/service-menu UX is a bridge, not the final product.
 
 2. Add `docs/integration/spectacle-feature-map.md`.
    - Map each proposed Toolbelt feature to:
@@ -196,6 +197,7 @@ Steps:
    - Use `spectacle-toolbelt open-in-spectacle %f`.
 
 3. Update `scripts/install-local.sh` and `scripts/uninstall-local.sh`.
+   - Install one visible guide launcher to `$XDG_DATA_HOME/applications`.
    - Install service menus to `$XDG_DATA_HOME/kio/servicemenus` for KF6 and
      `$XDG_DATA_HOME/kservices5/ServiceMenus` for KF5.
    - Rewrite installed `Exec=` lines to the resolved Toolbelt executable so KDE does not need an activated shell virtualenv.

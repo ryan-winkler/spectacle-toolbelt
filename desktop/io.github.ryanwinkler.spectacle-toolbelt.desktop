@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Spectacle Toolbelt
+GenericName=Screenshot Power Tools
+Comment=Show how to use Spectacle Toolbelt actions
+Exec=spectacle-toolbelt guide
+Icon=spectacle
+Terminal=false
+Categories=Graphics;KDE;Qt;
+Keywords=Spectacle;Screenshot;Scrolling Capture;Stitch;Toolbelt;
+StartupNotify=false
+X-Spectacle-Toolbelt-Owned=true

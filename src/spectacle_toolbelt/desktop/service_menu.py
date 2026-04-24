@@ -32,6 +32,7 @@ KF5_SERVICE_MENU_TARGET = InstallTarget(
 )
 
 SERVICE_MENU_TARGETS = (SERVICE_MENU_TARGET, KF5_SERVICE_MENU_TARGET)
+DESKTOP_ENTRY = "io.github.ryanwinkler.spectacle-toolbelt.desktop"
 
 
 def xdg_data_home(home: Path, env_value: str | None = None) -> Path:

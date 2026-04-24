@@ -2,8 +2,15 @@
 
 Date: 2026-04-24
 
-Toolbelt installs optional Dolphin/KIO service menus as KDE-standard fallback
-surfaces. They do not modify Spectacle files.
+Toolbelt installs a visible KDE launcher plus optional Dolphin/KIO service
+menus as KDE-standard fallback surfaces. They do not modify Spectacle files.
+
+## Installed Launcher
+
+- `Spectacle Toolbelt`
+  - runs `spectacle-toolbelt guide`
+  - opens a KDE dialog explaining the Dolphin actions and CLI equivalents
+  - exists so KRunner/application-launcher users have an obvious entry point
 
 ## Installed Menus
 

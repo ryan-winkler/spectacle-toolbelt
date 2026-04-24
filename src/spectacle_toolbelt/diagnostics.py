@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import shutil
 from dataclasses import dataclass
+from pathlib import Path
 
 
 @dataclass(frozen=True)
@@ -81,5 +82,44 @@ def run_doctor() -> DoctorReport:
         _tool("convert", note="ImageMagick 6 compatibility"),
         *clipboard_candidates,
         _tool("notify-send", note="desktop notifications"),
+        *_local_spectacle_launcher_checks(),
     )
     return DoctorReport(session_type=session_type, checks=checks)
+
+
+def _local_spectacle_launcher_checks() -> tuple[ToolCheck, ...]:
+    applications_dir = _xdg_data_home() / "applications"
+    if not applications_dir.is_dir():
+        return ()
+
+    checks: list[ToolCheck] = []
+    for path in sorted(applications_dir.glob("spectacle*.desktop")):
+        try:
+            content = path.read_text(encoding="utf-8")
+        except OSError:
+            continue
+        if "Exec=" not in content:
+            continue
+
+        missing = [
+            key
+            for key in (
+                "X-KDE-DBUS-Restricted-Interfaces=org.kde.KWin.ScreenShot2",
+                "X-KDE-Wayland-Interfaces=org_kde_plasma_window_management,zkde_screencast_unstable_v1",
+            )
+            if key not in content
+        ]
+        checks.append(
+            ToolCheck(
+                name=f"{path.name} KWin authorization",
+                available=not missing,
+                path=str(path),
+                required=False,
+                note="ok" if not missing else f"missing {', '.join(missing)}",
+            )
+        )
+    return tuple(checks)
+
+
+def _xdg_data_home() -> Path:
+    return Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local" / "share"))

@@ -10,6 +10,7 @@ STITCH_SERVICE_MENU = REPO_ROOT / "servicemenus" / "io.github.ryanwinkler.specta
 OPEN_IN_SPECTACLE_SERVICE_MENU = (
     REPO_ROOT / "servicemenus" / "io.github.ryanwinkler.spectacle-toolbelt-open-in-spectacle.desktop"
 )
+TOOLBELT_LAUNCHER = REPO_ROOT / "desktop" / "io.github.ryanwinkler.spectacle-toolbelt.desktop"
 
 
 def _run_script(name: str, xdg_data_home: Path, *args: str) -> subprocess.CompletedProcess[str]:
@@ -37,6 +38,7 @@ def test_install_and_uninstall_round_trip_in_temp_xdg_home(tmp_path) -> None:
     assert install.returncode == 0, install.stderr
     installed = sorted(path.relative_to(tmp_path).as_posix() for path in tmp_path.rglob("*.desktop"))
     assert installed == [
+        "applications/io.github.ryanwinkler.spectacle-toolbelt.desktop",
         "kio/servicemenus/io.github.ryanwinkler.spectacle-toolbelt-open-in-spectacle.desktop",
         "kio/servicemenus/io.github.ryanwinkler.spectacle-toolbelt-stitch.desktop",
         "kservices5/ServiceMenus/io.github.ryanwinkler.spectacle-toolbelt-open-in-spectacle.desktop",
@@ -49,10 +51,14 @@ def test_install_and_uninstall_round_trip_in_temp_xdg_home(tmp_path) -> None:
     assert list(tmp_path.rglob("*.desktop")) == []
 
 
-def test_no_gui_launcher_stubs_are_shipped() -> None:
+def test_only_real_guide_launcher_is_shipped() -> None:
     desktop_dir = REPO_ROOT / "desktop"
 
-    assert not list(desktop_dir.glob("*.desktop"))
+    desktop_files = sorted(path.name for path in desktop_dir.glob("*.desktop"))
+    assert desktop_files == ["io.github.ryanwinkler.spectacle-toolbelt.desktop"]
+    content = TOOLBELT_LAUNCHER.read_text(encoding="utf-8")
+    assert "Exec=spectacle-toolbelt guide" in content
+    assert "X-Spectacle-Toolbelt-Owned=true" in content
 
 
 def test_install_rewrites_exec_to_resolved_command(tmp_path) -> None:
@@ -65,6 +71,9 @@ def test_install_rewrites_exec_to_resolved_command(tmp_path) -> None:
     expected_command = tmp_path / "fake-bin" / "spectacle-toolbelt"
     assert f"Exec={expected_command} open-in-spectacle %f" in installed_menu.read_text(encoding="utf-8")
     assert "Exec=spectacle-toolbelt" not in installed_menu.read_text(encoding="utf-8")
+
+    installed_launcher = tmp_path / "applications" / "io.github.ryanwinkler.spectacle-toolbelt.desktop"
+    assert f"Exec={expected_command} guide" in installed_launcher.read_text(encoding="utf-8")
 
 
 def test_install_refuses_to_overwrite_non_toolbelt_file(tmp_path) -> None:

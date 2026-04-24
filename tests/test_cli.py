@@ -64,6 +64,25 @@ def test_open_in_spectacle_command_reports_handoff(tmp_path, capsys) -> None:
     assert "opened in Spectacle editor" in captured.out
 
 
+def test_guide_command_uses_kde_dialog_when_available(capsys) -> None:
+    def which(command: str) -> str | None:
+        return "/usr/bin/kdialog" if command == "kdialog" else None
+
+    with (
+        patch("spectacle_toolbelt.desktop.guide.shutil.which", side_effect=which),
+        patch("spectacle_toolbelt.desktop.guide.subprocess.run") as run,
+    ):
+        run.return_value.returncode = 0
+
+        exit_code = main(["guide"])
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert captured.out == ""
+    assert run.call_args.args[0][0] == "/usr/bin/kdialog"
+    assert "Spectacle Toolbelt" in run.call_args.args[0]
+
+
 def test_stitch_command_can_use_default_output_path(tmp_path, capsys) -> None:
     full = _striped_image(4, 8)
     first_path = tmp_path / "frame-001.png"

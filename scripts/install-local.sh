@@ -2,8 +2,10 @@
 set -euo pipefail
 
 readonly MARKER="X-Spectacle-Toolbelt-Owned=true"
-readonly LEGACY_DESKTOP_FILES=(
+readonly DESKTOP_FILES=(
   "io.github.ryanwinkler.spectacle-toolbelt.desktop"
+)
+readonly LEGACY_DESKTOP_FILES=(
   "io.github.ryanwinkler.spectacle-toolbelt-scroll.desktop"
   "io.github.ryanwinkler.spectacle-toolbelt-transform.desktop"
   "io.github.ryanwinkler.spectacle-toolbelt-redact.desktop"
@@ -194,6 +196,7 @@ done
 
 script_dir=$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 repo_root=$(CDPATH= cd -- "$script_dir/.." && pwd)
+source_dir="$repo_root/desktop"
 toolbelt_command=$(resolve_toolbelt_command)
 toolbelt_exec=$(desktop_exec_command "$toolbelt_command")
 data_home="${XDG_DATA_HOME:-$HOME/.local/share}"
@@ -206,6 +209,18 @@ service_menu_dirs=(
 run install -d "$applications_dir"
 for service_menus_dir in "${service_menu_dirs[@]}"; do
   run install -d "$service_menus_dir"
+done
+
+for file in "${DESKTOP_FILES[@]}"; do
+  source_file="$source_dir/$file"
+  target_file="$applications_dir/$file"
+
+  if [[ ! -f "$source_file" ]]; then
+    printf 'Missing source desktop file: %s\n' "$source_file" >&2
+    exit 1
+  fi
+
+  install_entry_file "$source_file" "$target_file" "$toolbelt_exec"
 done
 
 for file in "${LEGACY_DESKTOP_FILES[@]}"; do
@@ -226,6 +241,7 @@ for service_menus_dir in "${service_menu_dirs[@]}"; do
   done
 done
 
+printf 'Installed Spectacle Toolbelt launcher to %s\n' "$applications_dir"
 printf 'Cleaned up legacy Spectacle Toolbelt desktop launchers from %s\n' "$applications_dir"
 for service_menus_dir in "${service_menu_dirs[@]}"; do
   printf 'Installed Spectacle Toolbelt service menus to %s\n' "$service_menus_dir"

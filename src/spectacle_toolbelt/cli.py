@@ -21,6 +21,8 @@ def build_parser() -> argparse.ArgumentParser:
     doctor = subparsers.add_parser("doctor", help="Report local capture/tooling support.")
     doctor.add_argument("--json", action="store_true", help="Emit machine-readable JSON.")
 
+    subparsers.add_parser("guide", help="Show the installed KDE usage guide.")
+
     stitch = subparsers.add_parser("stitch", help="Stitch pre-captured scroll frames.")
     stitch.add_argument("frames", nargs="+", type=Path, help="Frame images in capture order.")
     stitch.add_argument("-o", "--output", type=Path, help="Output PNG path.")
@@ -106,6 +108,11 @@ def main(argv: list[str] | None = None) -> int:
             return 0
         print(report.to_text())
         return 0 if report.is_usable else 2
+
+    if args.command == "guide":
+        from spectacle_toolbelt.desktop.guide import show_guide
+
+        return show_guide()
 
     if args.command == "stitch":
         from spectacle_toolbelt.scroll.stitch_engine import StitchError, stitch_files

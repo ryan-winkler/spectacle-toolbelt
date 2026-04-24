@@ -33,8 +33,9 @@ Current scaffold:
   CLI roadmap stubs so issue reports can use stable names from the start. They
   are not installed into the GUI and are not claims that Toolbelt owns
   Spectacle-native features.
-- Desktop integration installs working Toolbelt-owned service menus only. It
-  does not edit Spectacle files, KDE system files, or user shortcuts.
+- Desktop integration installs a Toolbelt guide launcher and working
+  Toolbelt-owned service menus only. It does not edit Spectacle files, KDE
+  system files, or user shortcuts.
 
 ## What Spectacle Already Owns
 
@@ -62,7 +63,7 @@ parallel app. For scrolling capture, that means a Spectacle capture mode/action,
 selection overlay controls, Done/Cancel, progress, frame count, partial-result
 states, and final handoff to Spectacle's editor.
 
-Toolbelt's CLI and service menus are the bridge:
+Toolbelt's launcher, CLI, and service menus are the bridge:
 
 - prove algorithms and edge cases
 - generate diagnostics and fixtures
@@ -149,6 +150,13 @@ Both sessions:
 - Reports should include diagnostics and reproduction details, not private
   screenshots unless the reporter has already redacted them.
 
+### KWin Authorization Errors
+
+On Plasma Wayland, custom Spectacle launchers must declare the same restricted
+interfaces as Spectacle's own desktop file. If KWin reports that the process is
+not authorized to take a screenshot, run `spectacle-toolbelt doctor` and check
+for local `spectacle*.desktop` entries missing the KWin authorization keys.
+
 ## Install
 
 Requirements:
@@ -169,7 +177,8 @@ python -m pip install -e '.[dev]'
 spectacle-toolbelt doctor
 ```
 
-Install KDE service menus into your user XDG data directories:
+Install the KDE guide launcher and service menus into your user XDG data
+directories:
 
 ```bash
 scripts/install-local.sh --dry-run
@@ -183,13 +192,13 @@ scripts/uninstall-local.sh --dry-run
 scripts/uninstall-local.sh
 ```
 
-The install scripts install only working Dolphin/KIO service-menu surfaces and
-clean up older Toolbelt-owned launcher stubs. They refuse to overwrite or delete
-a target file unless it contains the `X-Spectacle-Toolbelt-Owned=true` marker.
-Installed entries are rewritten to use the resolved Toolbelt executable, so KDE
-does not need to inherit your activated virtualenv. The scripts refresh KDE's
-service cache automatically when `kbuildsycoca6` or `kbuildsycoca5` is
-available.
+The install scripts install one visible guide launcher plus working Dolphin/KIO
+service-menu surfaces, and clean up older Toolbelt-owned launcher stubs. They
+refuse to overwrite or delete a target file unless it contains the
+`X-Spectacle-Toolbelt-Owned=true` marker. Installed entries are rewritten to use
+the resolved Toolbelt executable, so KDE does not need to inherit your activated
+virtualenv. The scripts refresh KDE's service cache automatically when
+`kbuildsycoca6` or `kbuildsycoca5` is available.
 
 ## Development
 
