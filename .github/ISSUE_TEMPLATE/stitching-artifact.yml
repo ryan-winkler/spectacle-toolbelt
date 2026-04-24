@@ -1,0 +1,66 @@
+name: Stitching artifact
+description: Report duplicated, missing, offset, or distorted output from frame stitching.
+title: "[stitching] "
+labels: ["bug", "stitching"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template when stitching completes but the output image is wrong. Prefer recreated or cropped sample frames that do not expose private data.
+  - type: textarea
+    id: summary
+    attributes:
+      label: Artifact summary
+      placeholder: The output duplicated the fixed header, lost a row between frames 2 and 3, or shifted content horizontally.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Toolbelt version or commit
+      placeholder: spectacle-toolbelt 0.1.0 or git commit SHA
+    validations:
+      required: true
+  - type: textarea
+    id: command
+    attributes:
+      label: Stitch command
+      description: Paste the command you ran, including confidence and debug options.
+      render: shell
+      placeholder: spectacle-toolbelt stitch frame-001.png frame-002.png --output stitched.png --debug-json stitched.debug.json
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected result
+      placeholder: One continuous image with the header appearing only once.
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual result
+      placeholder: Header is repeated three times and the third frame begins 20 pixels too far left.
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Debug JSON or confidence output
+      description: Paste diagnostic output after removing sensitive paths and content.
+      render: json
+  - type: checkboxes
+    id: frame-sharing
+    attributes:
+      label: Sample frame status
+      options:
+        - label: I can provide redacted sample frames or a synthetic reproduction if needed.
+        - label: The sample frames contain no secrets, tokens, private messages, customer data, or personal documents.
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy check
+      options:
+        - label: I removed or redacted secrets, tokens, private messages, and personal data from this report.
+          required: true

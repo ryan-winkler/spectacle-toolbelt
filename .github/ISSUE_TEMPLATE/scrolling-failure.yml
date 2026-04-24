@@ -1,0 +1,70 @@
+name: Scrolling capture failure
+description: Report a scrolling capture workflow that fails or cannot complete.
+title: "[scrolling] "
+labels: ["bug", "scrolling-capture"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a scrolling capture failure. Do not upload screenshots that contain secrets, customer data, personal messages, tokens, or private documents.
+  - type: textarea
+    id: summary
+    attributes:
+      label: What failed?
+      description: Describe the visible behavior and what you expected instead.
+      placeholder: Manual scrolling stopped after the second frame, or automatic scrolling did not move the page.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Toolbelt version or commit
+      placeholder: spectacle-toolbelt 0.1.0 or git commit SHA
+    validations:
+      required: true
+  - type: dropdown
+    id: session
+    attributes:
+      label: Desktop session
+      options:
+        - Wayland
+        - X11
+        - Unsure
+    validations:
+      required: true
+  - type: input
+    id: app
+    attributes:
+      label: App or page being captured
+      placeholder: Firefox, Chromium, Okular, Dolphin, Konsole, Electron app, etc.
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+      description: Include exact commands if you used the CLI.
+      placeholder: |
+        1. Ran spectacle-toolbelt scroll --manual --output page.png
+        2. Selected a region in Spectacle
+        3. Scrolled down one page
+        4. Capture stopped with ...
+    validations:
+      required: true
+  - type: textarea
+    id: doctor
+    attributes:
+      label: Doctor output
+      description: Paste `spectacle-toolbelt doctor` output. Remove local paths if needed.
+      render: text
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or diagnostics
+      description: Paste terminal output or debug JSON after removing sensitive paths and content.
+      render: text
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy check
+      options:
+        - label: I removed or redacted secrets, tokens, private messages, and personal data from this report.
+          required: true

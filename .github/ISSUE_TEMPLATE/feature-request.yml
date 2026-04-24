@@ -1,0 +1,66 @@
+name: Feature request
+description: Suggest a new Spectacle Toolbelt workflow or integration.
+title: "[feature] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Spectacle Toolbelt is a companion kit, not a Spectacle fork. Good requests should fit through local CLI, desktop action, service menu, or upstream-friendly integration points.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What screenshot workflow is hard, missing, slow, or error-prone today?
+      placeholder: I need to redact repeated email addresses before sharing support screenshots.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed workflow
+      description: Describe the command, desktop action, or user flow you want.
+      placeholder: A desktop action that runs OCR locally, detects email addresses, masks them, and saves a redacted copy.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Scrolling capture
+        - Stitching
+        - OCR
+        - Redaction
+        - ImageMagick-style preset
+        - Documentation/step capture
+        - Screenshot library
+        - KDE desktop integration
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: locality
+    attributes:
+      label: Local-first expectation
+      options:
+        - Must stay fully local
+        - Local by default, optional external integration is acceptable
+        - External service is required
+        - Unsure
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Existing tools or alternatives
+      description: Mention Spectacle, Snagit, ImageMagick, Flameshot, ShareX, CleanShot, Shottr, PicPick, or scripts you already use.
+  - type: checkboxes
+    id: boundaries
+    attributes:
+      label: Fit check
+      options:
+        - label: This request can work without forking or patching Spectacle.
+          required: true
+        - label: I am not asking Toolbelt to upload screenshots or private data by default.
+          required: true

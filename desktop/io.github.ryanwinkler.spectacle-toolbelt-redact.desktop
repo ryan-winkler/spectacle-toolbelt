@@ -1,0 +1,15 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Redact with Spectacle Toolbelt
+GenericName=Screenshot Redaction
+Comment=Create a redacted screenshot copy with Spectacle Toolbelt
+Exec=spectacle-toolbelt redact --policy default %f
+Icon=edit-delete-remove
+Terminal=true
+Categories=Graphics;KDE;Qt;
+Keywords=Spectacle;Screenshot;Redaction;Privacy;
+MimeType=image/png;image/jpeg;image/webp;
+StartupNotify=false
+NoDisplay=true
+X-Spectacle-Toolbelt-Owned=true

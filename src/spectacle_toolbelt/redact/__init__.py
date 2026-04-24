@@ -1,0 +1,1 @@
+"""Redaction extension point package."""

@@ -1,0 +1,1 @@
+"""Capture adapter package."""
