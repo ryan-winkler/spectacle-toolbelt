@@ -19,6 +19,17 @@ def _striped_image(width: int, height: int, *, offset: int = 0) -> Image.Image:
     return image
 
 
+def _striped_horizontal_image(width: int, height: int, *, offset: int = 0) -> Image.Image:
+    image = Image.new("RGBA", (width, height))
+    pixels = image.load()
+    for x in range(width):
+        value = x + offset
+        color = ((value * 31) % 256, (value * 47) % 256, (value * 59) % 256, 255)
+        for y in range(height):
+            pixels[x, y] = color
+    return image
+
+
 def test_stitch_command_writes_debug_json_parent_directory(tmp_path, capsys) -> None:
     full = _striped_image(4, 8)
     first_path = tmp_path / "frame-001.png"
@@ -201,6 +212,35 @@ def test_stitch_command_natural_sort_orders_frames_by_filename(tmp_path, capsys)
     assert Image.open(output_path).size == full.size
 
 
+def test_stitch_command_can_stitch_horizontally(tmp_path, capsys) -> None:
+    full = _striped_horizontal_image(8, 4)
+    first_path = tmp_path / "frame-001.png"
+    second_path = tmp_path / "frame-002.png"
+    output_path = tmp_path / "stitched.png"
+    full.crop((0, 0, 5, 4)).save(first_path)
+    full.crop((3, 0, 8, 4)).save(second_path)
+
+    exit_code = main(
+        [
+            "stitch",
+            str(first_path),
+            str(second_path),
+            "--output",
+            str(output_path),
+            "--direction",
+            "horizontal",
+            "--min-overlap-rows",
+            "1",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert f"complete: wrote {output_path}" in captured.out
+    assert Image.open(output_path).size == full.size
+    assert Image.open(output_path).tobytes() == full.tobytes()
+
+
 def test_scroll_command_runs_manual_capture_workflow(tmp_path, capsys) -> None:
     output_path = tmp_path / "scroll.png"
 
@@ -218,6 +258,33 @@ def test_scroll_command_runs_manual_capture_workflow(tmp_path, capsys) -> None:
     assert request.mode == "manual"
     assert request.output == output_path
     assert request.open_in_spectacle is False
+
+
+def test_scroll_command_passes_manual_direction(tmp_path, capsys) -> None:
+    output_path = tmp_path / "scroll.png"
+
+    with patch("spectacle_toolbelt.scroll.controller.run_scroll_capture") as run:
+        run.return_value.status = "complete"
+        run.return_value.output_path = output_path
+        run.return_value.frames = 2
+        run.return_value.debug_json_path = output_path.with_suffix(".png.debug.json")
+
+        exit_code = main(
+            [
+                "scroll",
+                "--manual",
+                "--direction",
+                "horizontal",
+                "--output",
+                str(output_path),
+                "--no-open-in-spectacle",
+            ]
+        )
+
+    assert exit_code == 0
+    request = run.call_args.args[0]
+    assert request.mode == "manual"
+    assert request.direction == "horizontal"
 
 
 def test_web_fullpage_command_captures_url(tmp_path, capsys) -> None:

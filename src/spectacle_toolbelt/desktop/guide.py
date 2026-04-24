@@ -28,7 +28,8 @@ Use it from Dolphin:
 
 4. Stitch existing scrolling frames
    Select 2-24 PNG, JPEG, or WebP frames, right-click, then choose:
-   Actions > Spectacle Toolbelt > Stitch with Spectacle Toolbelt
+   Actions > Spectacle Toolbelt > Stitch Vertically with Spectacle Toolbelt
+   or Stitch Horizontally with Spectacle Toolbelt
 
 5. Open an image in Spectacle's editor
    Select one image, right-click, then choose:
@@ -37,8 +38,10 @@ Use it from Dolphin:
 Command-line equivalents:
 
 spectacle-toolbelt scroll
+spectacle-toolbelt scroll --manual --direction horizontal
 spectacle-toolbelt web-fullpage
 spectacle-toolbelt stitch --natural-sort frame-*.png --open-in-spectacle
+spectacle-toolbelt stitch --direction horizontal --natural-sort frame-*.png --open-in-spectacle
 spectacle-toolbelt open-in-spectacle image.png
 spectacle-toolbelt doctor
 """

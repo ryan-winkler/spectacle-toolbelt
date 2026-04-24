@@ -186,7 +186,9 @@ def test_stitch_service_menu_requires_multiple_files() -> None:
 
     assert "X-KDE-MinNumberOfUrls=2" in content
     assert "X-KDE-MaxNumberOfUrls=24" in content
-    assert "stitch --natural-sort --max-frames 24 --open-in-spectacle %F" in content
+    assert "Actions=StitchVertical;StitchHorizontal;" in content
+    assert "stitch --direction vertical --natural-sort --max-frames 24 --open-in-spectacle %F" in content
+    assert "stitch --direction horizontal --natural-sort --max-frames 24 --open-in-spectacle %F" in content
 
 
 def test_open_in_spectacle_service_menu_requires_one_file() -> None:

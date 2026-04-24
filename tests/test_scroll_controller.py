@@ -18,6 +18,9 @@ class FakeDialog:
     def choose_scroll_mode(self, default: str) -> str:
         return default
 
+    def choose_scroll_direction(self, default: str) -> str:
+        return default
+
     def show_message(self, message: str) -> None:
         self.messages.append(message)
 
@@ -100,6 +103,64 @@ def test_auto_horizontal_fallback_preserves_horizontal_stitch_direction(monkeypa
     assert result.status == "complete"
     assert Image.open(result.output_path).size == full.size
     assert Image.open(result.output_path).tobytes() == full.tobytes()
+
+
+def test_manual_scroll_capture_can_stitch_horizontally(tmp_path) -> None:
+    full = _striped_horizontal_image(8, 4)
+    captures = [
+        full.crop((0, 0, 5, 4)),
+        full.crop((3, 0, 8, 4)),
+    ]
+
+    def capture_frame(path: Path) -> Path:
+        captures.pop(0).save(path)
+        return path
+
+    result = run_scroll_capture(
+        ScrollCaptureRequest(
+            output=tmp_path / "stitched.png",
+            mode="manual",
+            direction="horizontal",
+            open_in_spectacle=False,
+            min_overlap_rows=1,
+        ),
+        dialog=FakeDialog(),
+        capture_frame=capture_frame,
+    )
+
+    assert result.status == "complete"
+    assert Image.open(result.output_path).size == full.size
+    assert Image.open(result.output_path).tobytes() == full.tobytes()
+
+
+def test_manual_scroll_capture_prompts_for_direction(tmp_path) -> None:
+    class HorizontalDialog(FakeDialog):
+        def choose_scroll_direction(self, default: str) -> str:
+            return "horizontal"
+
+    full = _striped_horizontal_image(8, 4)
+    captures = [
+        full.crop((0, 0, 5, 4)),
+        full.crop((3, 0, 8, 4)),
+    ]
+
+    def capture_frame(path: Path) -> Path:
+        captures.pop(0).save(path)
+        return path
+
+    result = run_scroll_capture(
+        ScrollCaptureRequest(
+            output=tmp_path / "stitched.png",
+            mode="manual",
+            open_in_spectacle=False,
+            min_overlap_rows=1,
+        ),
+        dialog=HorizontalDialog(),
+        capture_frame=capture_frame,
+    )
+
+    assert result.status == "complete"
+    assert Image.open(result.output_path).size == full.size
 
 
 def _striped_image(width: int, height: int, *, offset: int = 0) -> Image.Image:

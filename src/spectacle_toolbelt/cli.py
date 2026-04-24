@@ -36,7 +36,13 @@ def build_parser() -> argparse.ArgumentParser:
         "--min-overlap-rows",
         type=int,
         default=8,
-        help="Minimum rows required for a reliable overlap match.",
+        help="Minimum rows/columns required for a reliable overlap match.",
+    )
+    stitch.add_argument(
+        "--direction",
+        choices=("vertical", "horizontal"),
+        default="vertical",
+        help="Axis to stitch across.",
     )
     stitch.add_argument(
         "--open-in-spectacle",
@@ -72,6 +78,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--mode",
         choices=("manual", "auto-vertical", "auto-horizontal"),
         help="Scrolling capture mode. Without this, the KDE launcher asks.",
+    )
+    scroll.add_argument(
+        "--direction",
+        choices=("vertical", "horizontal"),
+        help="Manual scroll axis. Without this, manual mode asks.",
     )
     scroll.add_argument("--max-frames", type=int, default=24, help="Maximum frames in one session.")
     scroll.add_argument(
@@ -170,6 +181,7 @@ def main(argv: list[str] | None = None) -> int:
             result = stitch_files(
                 frames,
                 output_path,
+                direction=args.direction,
                 min_confidence=args.min_confidence,
                 min_overlap_rows=args.min_overlap_rows,
                 max_frames=args.max_frames,
@@ -228,6 +240,7 @@ def main(argv: list[str] | None = None) -> int:
                 ScrollCaptureRequest(
                     output=output_path,
                     mode=args.mode or ("manual" if args.manual else None),
+                    direction=args.direction,
                     manual=args.manual,
                     max_frames=args.max_frames,
                     min_confidence=args.min_confidence,

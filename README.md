@@ -29,9 +29,10 @@ Current implementation:
 - `spectacle-toolbelt web-fullpage` captures a complete webpage PNG. It tries
   active Chromium-family tab metadata first when available, then prompts for a
   URL. The installed launcher declares `Ctrl+Alt+W` as its KDE shortcut.
-- `spectacle-toolbelt stitch FRAME... [--output OUTPUT.png]` stitches
-  pre-captured scroll frames. Without `--output`, Toolbelt writes to the
-  Spectacle/XDG screenshots folder with a collision-resistant timestamped name.
+- `spectacle-toolbelt stitch FRAME... [--direction vertical|horizontal]
+  [--output OUTPUT.png]` stitches pre-captured scroll frames. Without
+  `--output`, Toolbelt writes to the Spectacle/XDG screenshots folder with a
+  collision-resistant timestamped name.
 - `spectacle-toolbelt open-in-spectacle IMAGE` opens an image in Spectacle's
   native annotation editor via `spectacle --edit-existing`.
 - `transform`, `redact`, `ocr`, `qr`, and `markdown` commands are present as
@@ -105,6 +106,7 @@ Example:
 ```bash
 spectacle-toolbelt scroll
 spectacle-toolbelt scroll --manual --output scrolled-page.png
+spectacle-toolbelt scroll --manual --direction horizontal --output scrolled-wide.png
 spectacle-toolbelt web-fullpage --url https://example.com/
 ```
 

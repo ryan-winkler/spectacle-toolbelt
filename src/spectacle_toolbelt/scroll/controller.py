@@ -19,6 +19,7 @@ from spectacle_toolbelt.output.files import timestamped_output_path
 from spectacle_toolbelt.scroll.stitch_engine import StitchError, stitch_files
 
 SCROLL_MODES = ("manual", "auto-vertical", "auto-horizontal")
+SCROLL_DIRECTIONS = ("vertical", "horizontal")
 
 
 class ScrollCaptureError(RuntimeError):
@@ -27,6 +28,8 @@ class ScrollCaptureError(RuntimeError):
 
 class ScrollDialog(Protocol):
     def choose_scroll_mode(self, default: str) -> str: ...
+
+    def choose_scroll_direction(self, default: str) -> str: ...
 
     def show_message(self, message: str) -> None: ...
 
@@ -43,6 +46,7 @@ OpenEditor = Callable[[Path], object]
 class ScrollCaptureRequest:
     output: Path | None = None
     mode: str | None = None
+    direction: str | None = None
     manual: bool = False
     max_frames: int = 24
     min_confidence: float = 0.92
@@ -97,8 +101,11 @@ def run_scroll_capture(
         except DialogError as exc:
             raise ScrollCaptureError(str(exc)) from exc
     _validate_mode(requested_mode)
+    if request.direction is not None:
+        _validate_direction(request.direction)
 
     mode = _usable_mode(requested_mode, ui)
+    direction = _stitch_direction(requested_mode, request.direction, ui)
     output_path = request.output or timestamped_output_path()
     output_path.parent.mkdir(parents=True, exist_ok=True)
     debug_json_path = output_path.with_suffix(output_path.suffix + ".debug.json")
@@ -134,7 +141,6 @@ def run_scroll_capture(
 
             frames.append(_capture_numbered_frame(frame_dir, len(frames), capture_frame))
 
-        direction = "horizontal" if requested_mode == "auto-horizontal" else "vertical"
         try:
             stitch_result = stitch_files(
                 frames,
@@ -230,3 +236,24 @@ def _write_debug_json(path: Path, payload: dict[str, object], *, overwrite: bool
 def _validate_mode(mode: str) -> None:
     if mode not in SCROLL_MODES:
         raise ScrollCaptureError(f"unknown scroll mode: {mode}")
+
+
+def _validate_direction(direction: str) -> None:
+    if direction not in SCROLL_DIRECTIONS:
+        raise ScrollCaptureError(f"unknown scroll direction: {direction}")
+
+
+def _stitch_direction(mode: str, requested_direction: str | None, dialog: ScrollDialog) -> str:
+    if mode == "auto-horizontal":
+        return "horizontal"
+    if mode == "auto-vertical":
+        return "vertical"
+    if requested_direction is not None:
+        _validate_direction(requested_direction)
+        return requested_direction
+    try:
+        direction = dialog.choose_scroll_direction("vertical")
+    except DialogError as exc:
+        raise ScrollCaptureError(str(exc)) from exc
+    _validate_direction(direction)
+    return direction

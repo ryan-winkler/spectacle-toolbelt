@@ -157,11 +157,11 @@ External Toolbelt bridge until native Spectacle support exists:
 2. Toolbelt asks for scrolling mode:
    - Auto vertical
    - Auto horizontal
-   - Auto bidirectional
    - Manual/panoramic
-3. Toolbelt uses Spectacle-compatible capture paths to collect frames.
-4. Toolbelt uses the stitch engine to produce the result.
-5. Toolbelt opens the result in Spectacle's editor.
+3. Manual mode asks for vertical or horizontal stitch direction.
+4. Toolbelt uses Spectacle-compatible capture paths to collect frames.
+5. Toolbelt uses the stitch engine to produce the result.
+6. Toolbelt opens the result in Spectacle's editor.
 
 ## Scrolling Toolbar UX
 

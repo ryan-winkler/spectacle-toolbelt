@@ -70,6 +70,41 @@ class KdeDialog:
             "": default,
         }.get(choice, default)
 
+    def choose_scroll_direction(self, default: str = "vertical") -> str:
+        if self._kdialog:
+            result = self._run(
+                [
+                    self._kdialog,
+                    "--title",
+                    "Spectacle Toolbelt Scrolling Capture",
+                    "--default",
+                    default,
+                    "--menu",
+                    "Choose manual scroll direction",
+                    "vertical",
+                    "Vertical",
+                    "horizontal",
+                    "Horizontal",
+                ]
+            )
+            if result.returncode != 0:
+                raise DialogError("scrolling capture cancelled")
+            direction = result.stdout.strip()
+            if direction:
+                return direction
+            return default
+
+        self._require_terminal("choose a manual scroll direction")
+        print("Choose manual scroll direction:")
+        print("1. Vertical")
+        print("2. Horizontal")
+        choice = input(f"Direction [{default}]: ").strip()
+        return {
+            "1": "vertical",
+            "2": "horizontal",
+            "": default,
+        }.get(choice, default)
+
     def prompt_url(self, *, initial: str = "") -> str | None:
         if self._kdialog:
             result = self._run(

@@ -50,9 +50,15 @@ back to the system Spectacle desktop file.
   - hands the selected image to `spectacle --edit-existing`
   - only appears when exactly one image file is selected
 
-- `Stitch with Spectacle Toolbelt`
-  - runs `spectacle-toolbelt stitch --natural-sort --max-frames 24 --open-in-spectacle %F`
-  - intended for multiple pre-captured scroll frames
+- `Stitch Vertically with Spectacle Toolbelt`
+  - runs `spectacle-toolbelt stitch --direction vertical --natural-sort --max-frames 24 --open-in-spectacle %F`
+  - intended for multiple pre-captured vertical scroll frames
+  - only appears when 2-24 image files are selected
+  - sorts selected image filenames naturally before stitching
+
+- `Stitch Horizontally with Spectacle Toolbelt`
+  - runs `spectacle-toolbelt stitch --direction horizontal --natural-sort --max-frames 24 --open-in-spectacle %F`
+  - intended for multiple pre-captured horizontal scroll frames
   - only appears when 2-24 image files are selected
   - sorts selected image filenames naturally before stitching
 

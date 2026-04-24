@@ -2,7 +2,7 @@
 Type=Service
 Name=Spectacle Toolbelt
 MimeType=image/png;image/jpeg;image/webp;
-Actions=Stitch;
+Actions=StitchVertical;StitchHorizontal;
 ServiceTypes=KonqPopupMenu/Plugin
 X-KDE-ServiceTypes=KonqPopupMenu/Plugin
 X-KDE-Priority=TopLevel
@@ -11,7 +11,12 @@ X-KDE-MinNumberOfUrls=2
 X-KDE-MaxNumberOfUrls=24
 X-Spectacle-Toolbelt-Owned=true
 
-[Desktop Action Stitch]
-Name=Stitch with Spectacle Toolbelt
+[Desktop Action StitchVertical]
+Name=Stitch Vertically with Spectacle Toolbelt
 Icon=spectacle
-Exec=spectacle-toolbelt stitch --natural-sort --max-frames 24 --open-in-spectacle %F
+Exec=spectacle-toolbelt stitch --direction vertical --natural-sort --max-frames 24 --open-in-spectacle %F
+
+[Desktop Action StitchHorizontal]
+Name=Stitch Horizontally with Spectacle Toolbelt
+Icon=spectacle
+Exec=spectacle-toolbelt stitch --direction horizontal --natural-sort --max-frames 24 --open-in-spectacle %F
