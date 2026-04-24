@@ -3,12 +3,16 @@
 Spectacle Toolbelt is a companion extension kit for KDE Spectacle. It is not a
 fork, replacement, or patched Spectacle build.
 
-The project adds power-user workflows around Spectacle through normal desktop
-integration points: command-line tools, local launchers, desktop actions, and
-future service-menu entries. Spectacle remains the screenshot application.
-Toolbelt handles the things that sit just outside Spectacle's current scope:
-scrolling capture, repeatable image transforms, OCR workflows, redaction,
-documentation capture, and export automation.
+The project adds power-user workflow glue around Spectacle through normal KDE
+integration points: command-line tools, local launchers, desktop actions,
+Dolphin/KIO service menus, and documented shortcut recipes. Spectacle remains
+the screenshot application and the intended native GUI home for mature features.
+
+Toolbelt does not replace Spectacle's annotation editor, OCR action, QR scan
+flow, desktop actions, D-Bus capture surface, or KGlobalAccel shortcuts. It
+composes with those surfaces and provides a proving ground for missing workflows
+such as scrolling capture, repeatable transform presets, Markdown export, and
+documentation asset handling.
 
 ## Status
 
@@ -19,14 +23,49 @@ Current scaffold:
 - `spectacle-toolbelt doctor` checks local capture and helper-tool support.
 - `spectacle-toolbelt stitch FRAME... --output OUTPUT.png` stitches
   pre-captured scroll frames.
+- `spectacle-toolbelt open-in-spectacle IMAGE` opens an image in Spectacle's
+  native annotation editor via `spectacle --edit-existing`.
 - `spectacle-toolbelt scroll --manual --output OUTPUT.png` is the planned
   user-facing scrolling workflow and currently reports that the workflow is
   still scaffolded.
 - `transform`, `redact`, `ocr`, `qr`, and `markdown` commands are present as
   roadmap stubs so desktop actions and issue reports can use stable names from
-  the start.
+  the start. They are not claims that Toolbelt owns Spectacle-native features.
 - Desktop integration installs Toolbelt-owned launchers only. It does not edit
   Spectacle files, KDE system files, or user shortcuts.
+
+## What Spectacle Already Owns
+
+Toolbelt should reuse these Spectacle-native capabilities instead of duplicating
+them:
+
+- capture modes: full desktop, current monitor, active window, selected/window
+  under cursor, and rectangular region
+- recording modes: region, screen, and window
+- CLI/background capture: `--background`, `--region`, `--output`,
+  `--copy-image`, `--copy-path`, `--delay`, and `--onclick`
+- native editor handoff: `spectacle --edit-existing <file>`
+- D-Bus capture and recording methods
+- `.desktop` actions and KGlobalAccel global shortcuts
+- annotation editor tools: crop, select, freehand, highlighter, line, arrow,
+  rectangle, ellipse, pixelate, blur, text, and number stamp
+- OCR action: Extract Text
+- QR scanning in the export flow
+- notifications with open and annotate actions
+
+## Native GUI Direction
+
+The end-state UX for serious features should be native Spectacle UI, not a
+parallel app. For scrolling capture, that means a Spectacle capture mode/action,
+selection overlay controls, Done/Cancel, progress, frame count, partial-result
+states, and final handoff to Spectacle's editor.
+
+Toolbelt's CLI, desktop files, and service menus are the bridge:
+
+- prove algorithms and edge cases
+- generate diagnostics and fixtures
+- provide useful KDE-standard fallback workflows
+- produce upstream-ready proposals and implementation evidence for Spectacle
 
 ## v0.1: Scrolling Capture
 
@@ -39,14 +78,16 @@ the visible screen:
 4. Stitch the frames into one PNG.
 5. Mark the result as partial when overlap confidence is too low.
 
-The first implementation path is intentionally conservative:
+The first external implementation path is intentionally conservative:
 
 - Manual/panoramic mode comes first because it works across more Wayland
   setups and is easier to debug.
-- Automatic scrolling is a later enhancement and will depend on what the
-  active desktop session allows.
+- Automatic scrolling is part of the complete product scope, but any claim of
+  support must be backed by the active desktop session and app/toolkit behavior.
 - Stitching diagnostics should be inspectable so users can report artifacts
   without uploading sensitive screenshots.
+- Stitched output should open in Spectacle's existing editor when the user asks
+  to annotate, extract text, scan QR content, copy, or save through Spectacle.
 
 Example:
 
@@ -58,24 +99,26 @@ spectacle-toolbelt stitch frame-001.png frame-002.png frame-003.png \
 
 ## Roadmap
 
-The broader project direction is a Spectacle companion toolbelt:
+The broader project direction is a Spectacle companion toolbelt that leads back
+to Spectacle-native UX:
 
 - Scrolling capture: manual first, then assisted automatic scrolling where the
-  session permits it.
+  session permits it, with native Spectacle UI as the target.
 - Smart stitching: artifact detection, partial-output reporting, horizontal
   tolerance, fixed-header handling, and debug overlays.
 - ImageMagick-style presets: resize, trim, border, watermark, blur, compare,
   format conversion, and save-variant workflows behind safe named presets.
-- OCR workflows: copy text, searchable sidecar text, QR/barcode reading, and
-  local text extraction.
-- Redaction: blur, pixelate, block, and future OCR-assisted redaction of email
-  addresses, access keys, tokens, and other sensitive patterns.
-- Documentation capture: step markers, click trails, numbered callouts, and
-  markdown export for runbooks and support notes.
+- Spectacle editor handoff: open stitched/generated images in Spectacle for
+  annotation, OCR, QR scanning, copy, save, and share workflows.
+- Redaction workflow glue: use Spectacle-owned blur/pixelate/manual annotation
+  where possible; only add policy/automation where Spectacle does not already
+  own the interaction.
+- Documentation workflow glue: Markdown export, sidecar metadata, consistent
+  asset naming, and guide sequencing around Spectacle-edited images.
 - Screenshot library helpers: local metadata, tags, OCR index files, and
   repeatable naming.
-- KDE integration: service menus, KRunner/global shortcut recipes, and upstream
-  Spectacle integration proposals when a workflow proves stable.
+- KDE integration: Dolphin/KIO service menus, KRunner/global shortcut recipes,
+  and upstream Spectacle integration proposals/MRs when a workflow proves stable.
 
 ## Wayland and X11 Caveats
 
@@ -139,7 +182,8 @@ scripts/uninstall-local.sh
 ```
 
 The install scripts copy only the `.desktop` files shipped in this repository.
-They refuse to overwrite or delete a target file unless it contains the
+They also install Toolbelt-owned Dolphin/KIO service menus when present. They
+refuse to overwrite or delete a target file unless it contains the
 `X-Spectacle-Toolbelt-Owned=true` marker.
 
 ## Development
