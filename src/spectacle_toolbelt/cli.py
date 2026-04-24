@@ -22,7 +22,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     stitch = subparsers.add_parser("stitch", help="Stitch pre-captured scroll frames.")
     stitch.add_argument("frames", nargs="+", type=Path, help="Frame images in capture order.")
-    stitch.add_argument("-o", "--output", required=True, type=Path, help="Output PNG path.")
+    stitch.add_argument("-o", "--output", type=Path, help="Output PNG path.")
     stitch.add_argument(
         "--min-confidence",
         type=float,
@@ -34,6 +34,11 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         default=8,
         help="Minimum rows required for a reliable overlap match.",
+    )
+    stitch.add_argument(
+        "--open-in-spectacle",
+        action="store_true",
+        help="Open the stitched output in Spectacle's native editor.",
     )
     stitch.add_argument("--debug-json", type=Path, help="Optional path for stitch diagnostics.")
 
@@ -64,6 +69,12 @@ def build_parser() -> argparse.ArgumentParser:
     markdown.add_argument("image", nargs="?", type=Path, help="Input image path.")
     markdown.add_argument("--copy", action="store_true", help="Copy Markdown to clipboard.")
 
+    open_editor = subparsers.add_parser(
+        "open-in-spectacle",
+        help="Open an image in Spectacle's native annotation editor.",
+    )
+    open_editor.add_argument("image", type=Path, help="Image to open with spectacle --edit-existing.")
+
     return parser
 
 
@@ -81,11 +92,13 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "stitch":
         from spectacle_toolbelt.scroll.stitch_engine import StitchError, stitch_files
+        from spectacle_toolbelt.output.files import timestamped_output_path
 
+        output_path = args.output or timestamped_output_path()
         try:
             result = stitch_files(
                 args.frames,
-                args.output,
+                output_path,
                 min_confidence=args.min_confidence,
                 min_overlap_rows=args.min_overlap_rows,
             )
@@ -95,8 +108,30 @@ def main(argv: list[str] | None = None) -> int:
         if args.debug_json:
             args.debug_json.parent.mkdir(parents=True, exist_ok=True)
             args.debug_json.write_text(json.dumps(result.to_dict(), indent=2), encoding="utf-8")
-        print(f"{result.status}: wrote {args.output} from {result.frames} frames")
+        if args.open_in_spectacle:
+            from spectacle_toolbelt.output.editor_handoff import (
+                EditorHandoffError,
+                open_in_spectacle,
+            )
+
+            try:
+                open_in_spectacle(output_path)
+            except EditorHandoffError as exc:
+                print(f"editor handoff failed: {exc}", file=sys.stderr)
+                return 1
+        print(f"{result.status}: wrote {output_path} from {result.frames} frames")
         return 0 if result.status != "failed" else 1
+
+    if args.command == "open-in-spectacle":
+        from spectacle_toolbelt.output.editor_handoff import EditorHandoffError, open_in_spectacle
+
+        try:
+            command = open_in_spectacle(args.image)
+        except EditorHandoffError as exc:
+            print(f"editor handoff failed: {exc}", file=sys.stderr)
+            return 1
+        print(f"opened in Spectacle editor: {' '.join(command.argv)}")
+        return 0
 
     if args.command == "scroll":
         mode = "manual" if args.manual else "automatic"

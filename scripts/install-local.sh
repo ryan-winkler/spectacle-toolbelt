@@ -9,6 +9,10 @@ readonly DESKTOP_FILES=(
   "io.github.ryanwinkler.spectacle-toolbelt-redact.desktop"
   "io.github.ryanwinkler.spectacle-toolbelt-copy-markdown.desktop"
 )
+readonly SERVICE_MENU_FILES=(
+  "io.github.ryanwinkler.spectacle-toolbelt-open-in-spectacle.desktop"
+  "io.github.ryanwinkler.spectacle-toolbelt-stitch.desktop"
+)
 
 dry_run=false
 
@@ -67,8 +71,10 @@ repo_root=$(CDPATH= cd -- "$script_dir/.." && pwd)
 source_dir="$repo_root/desktop"
 data_home="${XDG_DATA_HOME:-$HOME/.local/share}"
 applications_dir="$data_home/applications"
+service_menus_dir="$data_home/kio/servicemenus"
 
 run install -d "$applications_dir"
+run install -d "$service_menus_dir"
 
 for file in "${DESKTOP_FILES[@]}"; do
   source_file="$source_dir/$file"
@@ -83,5 +89,19 @@ for file in "${DESKTOP_FILES[@]}"; do
   run install -m 0644 "$source_file" "$target_file"
 done
 
+for file in "${SERVICE_MENU_FILES[@]}"; do
+  source_file="$repo_root/servicemenus/$file"
+  target_file="$service_menus_dir/$file"
+
+  if [[ ! -f "$source_file" ]]; then
+    printf 'Missing source service menu file: %s\n' "$source_file" >&2
+    exit 1
+  fi
+
+  require_owned_or_absent "$target_file"
+  run install -m 0644 "$source_file" "$target_file"
+done
+
 printf 'Installed Spectacle Toolbelt desktop entries to %s\n' "$applications_dir"
+printf 'Installed Spectacle Toolbelt service menus to %s\n' "$service_menus_dir"
 printf 'KDE should pick these up automatically; run kbuildsycoca6 manually if your launcher cache is stale.\n'

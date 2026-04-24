@@ -9,6 +9,10 @@ readonly DESKTOP_FILES=(
   "io.github.ryanwinkler.spectacle-toolbelt-redact.desktop"
   "io.github.ryanwinkler.spectacle-toolbelt-copy-markdown.desktop"
 )
+readonly SERVICE_MENU_FILES=(
+  "io.github.ryanwinkler.spectacle-toolbelt-open-in-spectacle.desktop"
+  "io.github.ryanwinkler.spectacle-toolbelt-stitch.desktop"
+)
 
 dry_run=false
 
@@ -54,6 +58,7 @@ done
 
 data_home="${XDG_DATA_HOME:-$HOME/.local/share}"
 applications_dir="$data_home/applications"
+service_menus_dir="$data_home/kio/servicemenus"
 
 for file in "${DESKTOP_FILES[@]}"; do
   target_file="$applications_dir/$file"
@@ -71,4 +76,21 @@ for file in "${DESKTOP_FILES[@]}"; do
   run rm -f "$target_file"
 done
 
+for file in "${SERVICE_MENU_FILES[@]}"; do
+  target_file="$service_menus_dir/$file"
+
+  if [[ ! -e "$target_file" ]]; then
+    printf 'Not installed: %s\n' "$target_file"
+    continue
+  fi
+
+  if ! is_toolbelt_owned "$target_file"; then
+    printf 'Refusing to remove non-Toolbelt file: %s\n' "$target_file" >&2
+    exit 1
+  fi
+
+  run rm -f "$target_file"
+done
+
 printf 'Removed Spectacle Toolbelt desktop entries from %s\n' "$applications_dir"
+printf 'Removed Spectacle Toolbelt service menus from %s\n' "$service_menus_dir"

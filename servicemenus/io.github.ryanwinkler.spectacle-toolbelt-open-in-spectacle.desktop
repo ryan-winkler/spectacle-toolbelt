@@ -1,0 +1,15 @@
+[Desktop Entry]
+Type=Service
+Name=Spectacle Toolbelt
+MimeType=image/png;image/jpeg;image/webp;
+Actions=OpenInSpectacle;
+ServiceTypes=KonqPopupMenu/Plugin
+X-KDE-ServiceTypes=KonqPopupMenu/Plugin
+X-KDE-Priority=TopLevel
+X-KDE-Submenu=Spectacle Toolbelt
+X-Spectacle-Toolbelt-Owned=true
+
+[Desktop Action OpenInSpectacle]
+Name=Open in Spectacle Editor
+Icon=spectacle
+Exec=spectacle-toolbelt open-in-spectacle %f
