@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Spectacle Toolbelt Scrolling Capture
+GenericName=Scrolling Screenshot Capture
+Comment=Capture scrolling content and open the result in Spectacle
+Exec=spectacle-toolbelt scroll
+Icon=spectacle
+Terminal=false
+Categories=Graphics;KDE;Qt;
+Keywords=Spectacle;Screenshot;Scrolling Capture;Snagit;ShareX;Toolbelt;
+StartupNotify=false
+X-Spectacle-Toolbelt-Owned=true

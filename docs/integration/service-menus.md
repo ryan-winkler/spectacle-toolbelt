@@ -2,15 +2,46 @@
 
 Date: 2026-04-24
 
-Toolbelt installs a visible KDE launcher plus optional Dolphin/KIO service
-menus as KDE-standard fallback surfaces. They do not modify Spectacle files.
+Toolbelt installs visible KDE launchers, Spectacle launcher app actions, and
+optional Dolphin/KIO service menus as KDE-standard fallback surfaces. It does
+not modify Spectacle's system files.
 
-## Installed Launcher
+## Installed Launchers
 
 - `Spectacle Toolbelt`
   - runs `spectacle-toolbelt guide`
-  - opens a KDE dialog explaining the Dolphin actions and CLI equivalents
+  - opens a KDE dialog explaining the launchers, Dolphin actions, and CLI
+    equivalents
   - exists so KRunner/application-launcher users have an obvious entry point
+
+- `Spectacle Toolbelt Scrolling Capture`
+  - runs `spectacle-toolbelt scroll`
+  - starts the visible scrolling capture workflow
+  - presents mode selection, Capture Next, Done, Cancel, frame count, and
+    Spectacle editor handoff
+
+- `Spectacle Toolbelt Full-Page Web Capture`
+  - runs `spectacle-toolbelt web-fullpage`
+  - tries active Chromium-family tab metadata, then prompts for a URL
+  - declares `X-KDE-Shortcuts=Ctrl+Alt+W`
+
+## Spectacle App Actions
+
+The installer creates a user-local `org.kde.spectacle.desktop` override by
+copying Spectacle's system desktop file, preserving its KWin authorization
+metadata, and appending Toolbelt actions:
+
+- `Scrolling Capture`
+  - runs `spectacle-toolbelt scroll`
+  - appears from Spectacle's launcher/task-manager context menu
+
+- `Full-Page Web Capture`
+  - runs `spectacle-toolbelt web-fullpage`
+  - appears from Spectacle's launcher/task-manager context menu
+  - declares `X-KDE-Shortcuts=Ctrl+Alt+W`
+
+Uninstalling removes only this Toolbelt-owned local override. KDE then falls
+back to the system Spectacle desktop file.
 
 ## Installed Menus
 

@@ -77,7 +77,23 @@ def run_doctor() -> DoctorReport:
         _tool("xsel", note="X11 clipboard"),
     )
     checks = (
+        ToolCheck(
+            name="capture ownership",
+            available=True,
+            required=False,
+            note=(
+                "normal screenshots are Spectacle-owned; scrolling capture and "
+                "full-page web capture are Toolbelt-owned launcher workflows"
+            ),
+        ),
         _tool("spectacle", required=True, note="capture adapter"),
+        _tool("kdialog", note="required for non-terminal KDE Toolbelt launcher dialogs"),
+        _first_available_tool(
+            ("google-chrome", "chromium", "chromium-browser"),
+            name="Chromium-family browser",
+            note="full-page web capture backend",
+        ),
+        _tool("xdotool", note="X11 active-tab matching and automatic scrolling"),
         _tool("magick", note="ImageMagick 7"),
         _tool("convert", note="ImageMagick 6 compatibility"),
         *clipboard_candidates,
@@ -93,7 +109,11 @@ def _local_spectacle_launcher_checks() -> tuple[ToolCheck, ...]:
         return ()
 
     checks: list[ToolCheck] = []
-    for path in sorted(applications_dir.glob("spectacle*.desktop")):
+    candidates = set(applications_dir.glob("spectacle*.desktop"))
+    spectacle_desktop = applications_dir / "org.kde.spectacle.desktop"
+    if spectacle_desktop.exists():
+        candidates.add(spectacle_desktop)
+    for path in sorted(candidates):
         try:
             content = path.read_text(encoding="utf-8")
         except OSError:
@@ -119,6 +139,14 @@ def _local_spectacle_launcher_checks() -> tuple[ToolCheck, ...]:
             )
         )
     return tuple(checks)
+
+
+def _first_available_tool(commands: tuple[str, ...], *, name: str, note: str | None = None) -> ToolCheck:
+    for command in commands:
+        path = shutil.which(command)
+        if path:
+            return ToolCheck(name=name, available=True, path=path, required=False, note=note)
+    return ToolCheck(name=name, available=False, required=False, note=note)
 
 
 def _xdg_data_home() -> Path:

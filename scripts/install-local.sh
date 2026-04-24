@@ -4,9 +4,11 @@ set -euo pipefail
 readonly MARKER="X-Spectacle-Toolbelt-Owned=true"
 readonly DESKTOP_FILES=(
   "io.github.ryanwinkler.spectacle-toolbelt.desktop"
-)
-readonly LEGACY_DESKTOP_FILES=(
   "io.github.ryanwinkler.spectacle-toolbelt-scroll.desktop"
+  "io.github.ryanwinkler.spectacle-toolbelt-web-fullpage.desktop"
+)
+readonly SPECTACLE_DESKTOP_FILE="org.kde.spectacle.desktop"
+readonly LEGACY_DESKTOP_FILES=(
   "io.github.ryanwinkler.spectacle-toolbelt-transform.desktop"
   "io.github.ryanwinkler.spectacle-toolbelt-redact.desktop"
   "io.github.ryanwinkler.spectacle-toolbelt-copy-markdown.desktop"
@@ -115,6 +117,57 @@ rewrite_exec_lines() {
   ' "$source_file" > "$output_file"
 }
 
+rewrite_spectacle_app_actions() {
+  local source_file=$1
+  local output_file=$2
+  local command_path=$3
+
+  awk -v command_path="$command_path" -v marker="$MARKER" '
+    function has_action(actions, action) {
+      return actions ~ "(^|;)" action "(;|$)"
+    }
+
+    /^Actions=/ {
+      actions = substr($0, length("Actions=") + 1)
+      if (actions != "" && actions !~ /;$/) {
+        actions = actions ";"
+      }
+      if (!has_action(actions, "ToolbeltScrollCapture")) {
+        actions = actions "ToolbeltScrollCapture;"
+      }
+      if (!has_action(actions, "ToolbeltWebFullpage")) {
+        actions = actions "ToolbeltWebFullpage;"
+      }
+      print "Actions=" actions
+      actions_seen = 1
+      next
+    }
+
+    /^X-Spectacle-Toolbelt-Owned=/ {
+      next
+    }
+
+    { print }
+
+    END {
+      if (!actions_seen) {
+        print "Actions=ToolbeltScrollCapture;ToolbeltWebFullpage;"
+      }
+      print ""
+      print "[Desktop Action ToolbeltScrollCapture]"
+      print "Name=Scrolling Capture"
+      print "Exec=" command_path " scroll"
+      print ""
+      print "[Desktop Action ToolbeltWebFullpage]"
+      print "Name=Full-Page Web Capture"
+      print "Exec=" command_path " web-fullpage"
+      print "X-KDE-Shortcuts=Ctrl+Alt+W"
+      print ""
+      print marker
+    }
+  ' "$source_file" > "$output_file"
+}
+
 desktop_exec_command() {
   local command_path=$1
   if [[ "$command_path" != *[[:space:]]* ]]; then
@@ -142,6 +195,70 @@ install_entry_file() {
   local temp_file
   temp_file=$(mktemp)
   if ! rewrite_exec_lines "$source_file" "$temp_file" "$exec_command"; then
+    rm -f "$temp_file"
+    return 1
+  fi
+  if ! install -m 0644 "$temp_file" "$target_file"; then
+    rm -f "$temp_file"
+    return 1
+  fi
+  rm -f "$temp_file"
+}
+
+resolve_spectacle_desktop_source() {
+  local configured=${SPECTACLE_DESKTOP_SOURCE:-}
+
+  if [[ -n "$configured" ]]; then
+    if [[ ! -f "$configured" ]]; then
+      printf 'Configured SPECTACLE_DESKTOP_SOURCE does not exist: %s\n' "$configured" >&2
+      return 1
+    fi
+    printf '%s\n' "$configured"
+    return 0
+  fi
+
+  local candidate
+  for candidate in \
+    "/usr/share/applications/$SPECTACLE_DESKTOP_FILE" \
+    "/usr/local/share/applications/$SPECTACLE_DESKTOP_FILE"; do
+    if [[ -f "$candidate" ]]; then
+      printf '%s\n' "$candidate"
+      return 0
+    fi
+  done
+
+  return 2
+}
+
+install_spectacle_app_actions() {
+  local target_file=$1
+  local exec_command=$2
+  local source_file
+
+  local status
+  if source_file=$(resolve_spectacle_desktop_source); then
+    status=0
+  else
+    status=$?
+  fi
+  if [[ "$status" -ne 0 ]]; then
+    if [[ "$status" -eq 2 ]]; then
+      printf 'Spectacle desktop file not found; skipping Spectacle app action integration.\n'
+      return 0
+    fi
+    return 1
+  fi
+
+  require_owned_or_absent "$target_file"
+  if [[ "$dry_run" == "true" ]]; then
+    print_cmd install -m 0644 "$source_file" "$target_file"
+    printf 'DRY-RUN: add Toolbelt Spectacle app actions to %s\n' "$target_file"
+    return 0
+  fi
+
+  local temp_file
+  temp_file=$(mktemp)
+  if ! rewrite_spectacle_app_actions "$source_file" "$temp_file" "$exec_command"; then
     rm -f "$temp_file"
     return 1
   fi
@@ -223,6 +340,8 @@ for file in "${DESKTOP_FILES[@]}"; do
   install_entry_file "$source_file" "$target_file" "$toolbelt_exec"
 done
 
+install_spectacle_app_actions "$applications_dir/$SPECTACLE_DESKTOP_FILE" "$toolbelt_exec"
+
 for file in "${LEGACY_DESKTOP_FILES[@]}"; do
   remove_owned_if_present "$applications_dir/$file"
 done
@@ -242,6 +361,7 @@ for service_menus_dir in "${service_menu_dirs[@]}"; do
 done
 
 printf 'Installed Spectacle Toolbelt launcher to %s\n' "$applications_dir"
+printf 'Installed Spectacle launcher app actions to %s/%s\n' "$applications_dir" "$SPECTACLE_DESKTOP_FILE"
 printf 'Cleaned up legacy Spectacle Toolbelt desktop launchers from %s\n' "$applications_dir"
 for service_menus_dir in "${service_menu_dirs[@]}"; do
   printf 'Installed Spectacle Toolbelt service menus to %s\n' "$service_menus_dir"

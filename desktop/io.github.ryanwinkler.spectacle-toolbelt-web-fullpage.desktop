@@ -1,0 +1,14 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Spectacle Toolbelt Full-Page Web Capture
+GenericName=Full-Page Web Screenshot
+Comment=Capture the active webpage or prompt for a URL
+Exec=spectacle-toolbelt web-fullpage
+Icon=spectacle
+Terminal=false
+Categories=Graphics;KDE;Qt;
+Keywords=Spectacle;Screenshot;Full Page;Web Capture;Snagit;ShareX;Toolbelt;
+StartupNotify=false
+X-KDE-Shortcuts=Ctrl+Alt+W
+X-Spectacle-Toolbelt-Owned=true

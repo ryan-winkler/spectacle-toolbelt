@@ -25,6 +25,17 @@ def _striped_image(width: int, height: int, *, offset: int = 0) -> Image.Image:
     return image
 
 
+def _striped_horizontal_image(width: int, height: int, *, offset: int = 0) -> Image.Image:
+    image = Image.new("RGBA", (width, height))
+    pixels = image.load()
+    for x in range(width):
+        value = x + offset
+        color = ((value * 31) % 256, (value * 47) % 256, (value * 59) % 256, 255)
+        for y in range(height):
+            pixels[x, y] = color
+    return image
+
+
 def test_stitch_images_exact_overlap_success() -> None:
     full = _striped_image(5, 9)
     first = full.crop((0, 0, 5, 6))
@@ -47,6 +58,19 @@ def test_stitch_images_exact_overlap_success() -> None:
             message="exact vertical overlap found",
         ),
     )
+
+
+def test_stitch_images_horizontal_overlap_success() -> None:
+    full = _striped_horizontal_image(9, 5)
+    first = full.crop((0, 0, 6, 5))
+    second = full.crop((3, 0, 9, 5))
+
+    result = stitch_images([first, second], direction="horizontal", min_overlap_rows=1)
+
+    assert result.status == "complete"
+    assert result.image.size == full.size
+    assert result.image.tobytes() == full.tobytes()
+    assert result.diagnostics[0].message == "exact horizontal overlap found"
 
 
 def test_stitch_images_identical_frame_detects_end() -> None:

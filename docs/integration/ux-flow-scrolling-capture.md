@@ -59,11 +59,16 @@ Partial output is acceptable only when clearly labeled. The user should know:
 
 ## Fallback Toolbelt Flow
 
-Until Spectacle has native UI, Toolbelt should:
+Until Spectacle has native UI, Toolbelt now:
 
-1. stitch pre-captured frames
-2. write a debug JSON sidecar when requested
-3. open the result in Spectacle via `spectacle --edit-existing`
-4. expose Dolphin/KIO service menus for existing images
+1. exposes `Spectacle Toolbelt Scrolling Capture` in the KDE launcher and as a
+   user-local Spectacle launcher app action
+2. asks for manual, automatic vertical, or automatic horizontal mode
+3. captures frames through Spectacle's region selector
+4. shows Capture Next, Done, Cancel, and frame count between frames
+5. writes a debug JSON sidecar
+6. opens the result in Spectacle via `spectacle --edit-existing`
+7. exposes Dolphin/KIO service menus for existing images
 
-The fallback flow is useful, but it is not the final product UX.
+The fallback flow is useful and visible, but the final product UX still belongs
+inside Spectacle's own capture overlay.

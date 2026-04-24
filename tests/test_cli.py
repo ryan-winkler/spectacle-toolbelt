@@ -199,3 +199,53 @@ def test_stitch_command_natural_sort_orders_frames_by_filename(tmp_path, capsys)
     assert exit_code == 0
     assert output_path.exists()
     assert Image.open(output_path).size == full.size
+
+
+def test_scroll_command_runs_manual_capture_workflow(tmp_path, capsys) -> None:
+    output_path = tmp_path / "scroll.png"
+
+    with patch("spectacle_toolbelt.scroll.controller.run_scroll_capture") as run:
+        run.return_value.status = "complete"
+        run.return_value.output_path = output_path
+        run.return_value.frames = 2
+
+        exit_code = main(["scroll", "--manual", "--output", str(output_path), "--no-open-in-spectacle"])
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert f"complete: wrote {output_path} from 2 frames" in captured.out
+    request = run.call_args.args[0]
+    assert request.mode == "manual"
+    assert request.output == output_path
+    assert request.open_in_spectacle is False
+
+
+def test_web_fullpage_command_captures_url(tmp_path, capsys) -> None:
+    output_path = tmp_path / "page.png"
+
+    with patch("spectacle_toolbelt.web.fullpage.capture_fullpage_web") as capture:
+        capture.return_value.status = "complete"
+        capture.return_value.output_path = output_path
+        capture.return_value.url = "https://example.com/"
+        capture.return_value.copied_to_clipboard = False
+
+        exit_code = main(
+            [
+                "web-fullpage",
+                "--url",
+                "https://example.com/",
+                "--output",
+                str(output_path),
+                "--no-copy",
+                "--no-open-in-spectacle",
+            ]
+        )
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert f"complete: wrote {output_path}" in captured.out
+    request = capture.call_args.args[0]
+    assert request.url == "https://example.com/"
+    assert request.output == output_path
+    assert request.copy_to_clipboard is False
+    assert request.open_in_spectacle is False

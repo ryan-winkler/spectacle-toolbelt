@@ -4,9 +4,10 @@ Spectacle Toolbelt is a companion extension kit for KDE Spectacle. It is not a
 fork, replacement, or patched Spectacle build.
 
 The project adds power-user workflow glue around Spectacle through normal KDE
-integration points: command-line tools, Dolphin/KIO service menus, and
-documented shortcut recipes. Spectacle remains the screenshot application and
-the intended native GUI home for mature features.
+integration points: command-line tools, Spectacle launcher app actions,
+Dolphin/KIO service menus, and documented shortcut recipes. Spectacle remains
+the screenshot application and the intended native GUI home for mature
+features.
 
 Toolbelt does not replace Spectacle's annotation editor, OCR action, QR scan
 flow, desktop actions, D-Bus capture surface, or KGlobalAccel shortcuts. It
@@ -16,26 +17,31 @@ documentation asset handling.
 
 ## Status
 
-`v0.1` is pre-alpha. The first usable wedge is scrolling capture.
+`v0.1` is pre-alpha. The first usable wedge is visible scrolling capture plus
+full-page web capture.
 
-Current scaffold:
+Current implementation:
 
 - `spectacle-toolbelt doctor` checks local capture and helper-tool support.
+- `spectacle-toolbelt scroll` starts a KDE-visible scrolling capture workflow
+  with mode choice, Spectacle region capture, Capture Next, Done, Cancel, frame
+  count, stitch diagnostics, and Spectacle editor handoff.
+- `spectacle-toolbelt web-fullpage` captures a complete webpage PNG. It tries
+  active Chromium-family tab metadata first when available, then prompts for a
+  URL. The installed launcher declares `Ctrl+Alt+W` as its KDE shortcut.
 - `spectacle-toolbelt stitch FRAME... [--output OUTPUT.png]` stitches
   pre-captured scroll frames. Without `--output`, Toolbelt writes to the
   Spectacle/XDG screenshots folder with a collision-resistant timestamped name.
 - `spectacle-toolbelt open-in-spectacle IMAGE` opens an image in Spectacle's
   native annotation editor via `spectacle --edit-existing`.
-- `spectacle-toolbelt scroll --manual --output OUTPUT.png` is the planned
-  user-facing scrolling workflow and currently reports that the workflow is
-  still scaffolded.
 - `transform`, `redact`, `ocr`, `qr`, and `markdown` commands are present as
   CLI roadmap stubs so issue reports can use stable names from the start. They
   are not installed into the GUI and are not claims that Toolbelt owns
   Spectacle-native features.
-- Desktop integration installs a Toolbelt guide launcher and working
-  Toolbelt-owned service menus only. It does not edit Spectacle files, KDE
-  system files, or user shortcuts.
+- Desktop integration installs Toolbelt-owned guide, scrolling capture, and
+  full-page web capture launchers, adds a reversible user-local Spectacle
+  launcher app-action override, and installs working Dolphin/KIO service menus.
+  It does not edit Spectacle's system files.
 
 ## What Spectacle Already Owns
 
@@ -63,7 +69,7 @@ parallel app. For scrolling capture, that means a Spectacle capture mode/action,
 selection overlay controls, Done/Cancel, progress, frame count, partial-result
 states, and final handoff to Spectacle's editor.
 
-Toolbelt's launcher, CLI, and service menus are the bridge:
+Toolbelt's launcher actions, CLI, and service menus are the bridge:
 
 - prove algorithms and edge cases
 - generate diagnostics and fixtures
@@ -81,23 +87,25 @@ the visible screen:
 4. Stitch the frames into one PNG.
 5. Mark the result as partial when overlap confidence is too low.
 
-The first external implementation path is intentionally conservative:
+The first external implementation path is intentionally conservative but usable:
 
-- Manual/panoramic mode comes first because it works across more Wayland
-  setups and is easier to debug.
-- Automatic scrolling is part of the complete product scope, but any claim of
-  support must be backed by the active desktop session and app/toolkit behavior.
+- Manual/panoramic mode is available now from the KDE launcher and CLI.
+- Automatic vertical and horizontal modes are exposed. They use explicit X11
+  scroll input when supported and fall back to manual mode on restricted Wayland
+  sessions. Bidirectional capture remains reserved for native Spectacle/grid
+  session support so Toolbelt does not advertise a mode it cannot stitch
+  correctly.
 - Stitching diagnostics should be inspectable so users can report artifacts
   without uploading sensitive screenshots.
-- Stitched output should open in Spectacle's existing editor when the user asks
-  to annotate, extract text, scan QR content, copy, or save through Spectacle.
+- Stitched output opens in Spectacle's existing editor for annotation, OCR, QR,
+  copy, save, and share workflows.
 
 Example:
 
 ```bash
-spectacle-toolbelt stitch frame-001.png frame-002.png frame-003.png \
-  --output scrolled-page.png \
-  --debug-json scrolled-page.debug.json
+spectacle-toolbelt scroll
+spectacle-toolbelt scroll --manual --output scrolled-page.png
+spectacle-toolbelt web-fullpage --url https://example.com/
 ```
 
 ## Roadmap
@@ -164,6 +172,13 @@ Requirements:
 - KDE Spectacle on `PATH`
 - Python 3.10+
 - Pillow
+- websockets
+- `kdialog` for KDE-native launcher dialogs. Terminal CLI use can fall back to
+  stdin prompts, but `.desktop` launcher workflows intentionally fail closed
+  instead of hanging when no dialog tool is available.
+- Optional: Chromium, Google Chrome, or Chromium Browser for full-page web
+  capture
+- Optional: `xdotool` for active-tab matching and automatic scrolling on X11
 - Optional: ImageMagick 7 (`magick`) or ImageMagick 6 (`convert`)
 - Optional: `wl-copy`, `xclip`, or `xsel` for clipboard workflows
 - Optional: `notify-send` for desktop notifications
@@ -177,8 +192,7 @@ python -m pip install -e '.[dev]'
 spectacle-toolbelt doctor
 ```
 
-Install the KDE guide launcher and service menus into your user XDG data
-directories:
+Install the KDE launchers and service menus into your user XDG data directories:
 
 ```bash
 scripts/install-local.sh --dry-run
@@ -192,13 +206,30 @@ scripts/uninstall-local.sh --dry-run
 scripts/uninstall-local.sh
 ```
 
-The install scripts install one visible guide launcher plus working Dolphin/KIO
-service-menu surfaces, and clean up older Toolbelt-owned launcher stubs. They
-refuse to overwrite or delete a target file unless it contains the
-`X-Spectacle-Toolbelt-Owned=true` marker. Installed entries are rewritten to use
-the resolved Toolbelt executable, so KDE does not need to inherit your activated
-virtualenv. The scripts refresh KDE's service cache automatically when
-`kbuildsycoca6` or `kbuildsycoca5` is available.
+The install scripts install three visible launchers:
+
+- `Spectacle Toolbelt`
+- `Spectacle Toolbelt Scrolling Capture`
+- `Spectacle Toolbelt Full-Page Web Capture`
+
+They also install two Spectacle app actions into a user-local
+`org.kde.spectacle.desktop` override so right-clicking Spectacle in the KDE
+launcher/task manager exposes:
+
+- `Scrolling Capture`
+- `Full-Page Web Capture`
+
+The installer copies the system Spectacle desktop file first, preserves its
+KWin authorization keys, then appends Toolbelt actions. Uninstalling removes
+only the Toolbelt-owned user override and falls back to the system Spectacle
+desktop file.
+
+The scripts also install Dolphin/KIO service-menu surfaces and clean up older
+Toolbelt-owned launcher stubs. They refuse to overwrite or delete a target file
+unless it contains the `X-Spectacle-Toolbelt-Owned=true` marker. Installed
+entries are rewritten to use the resolved Toolbelt executable, so KDE does not
+need to inherit your activated virtualenv. The scripts refresh KDE's service
+cache automatically when `kbuildsycoca6` or `kbuildsycoca5` is available.
 
 ## Development
 

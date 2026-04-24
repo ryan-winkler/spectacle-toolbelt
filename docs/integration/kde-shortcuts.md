@@ -21,14 +21,31 @@ The upstream source currently includes actions for:
 - start/stop region recording
 - launch Spectacle without capturing
 
-## Toolbelt Bridge Shortcut
+## Toolbelt Bridge Shortcuts
 
-Until scrolling capture is native in Spectacle, users can assign a KDE custom
-shortcut to:
+The local Toolbelt installer ships visible desktop entries for bridge workflows
+and appends Toolbelt actions to a reversible user-local Spectacle desktop
+override. The full-page web capture launcher and Spectacle app action declare
+the approved shortcut:
 
 ```bash
-spectacle-toolbelt scroll --manual
+spectacle-toolbelt web-fullpage
 ```
+
+Default shortcut:
+
+```text
+Ctrl+Alt+W
+```
+
+The scrolling capture launcher is also installed and can be bound from KDE
+System Settings if desired:
+
+```bash
+spectacle-toolbelt scroll
+```
+
+Toolbelt does not bind this over Spectacle's normal screenshot shortcuts.
 
 For editing an existing generated image:
 

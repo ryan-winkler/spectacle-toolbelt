@@ -3,8 +3,10 @@ set -euo pipefail
 
 readonly MARKER="X-Spectacle-Toolbelt-Owned=true"
 readonly DESKTOP_FILES=(
+  "org.kde.spectacle.desktop"
   "io.github.ryanwinkler.spectacle-toolbelt.desktop"
   "io.github.ryanwinkler.spectacle-toolbelt-scroll.desktop"
+  "io.github.ryanwinkler.spectacle-toolbelt-web-fullpage.desktop"
   "io.github.ryanwinkler.spectacle-toolbelt-transform.desktop"
   "io.github.ryanwinkler.spectacle-toolbelt-redact.desktop"
   "io.github.ryanwinkler.spectacle-toolbelt-copy-markdown.desktop"
@@ -122,7 +124,7 @@ for service_menus_dir in "${service_menu_dirs[@]}"; do
   done
 done
 
-printf 'Removed legacy Spectacle Toolbelt desktop entries from %s\n' "$applications_dir"
+printf 'Removed Spectacle Toolbelt desktop entries from %s\n' "$applications_dir"
 for service_menus_dir in "${service_menu_dirs[@]}"; do
   printf 'Removed Spectacle Toolbelt service menus from %s\n' "$service_menus_dir"
 done

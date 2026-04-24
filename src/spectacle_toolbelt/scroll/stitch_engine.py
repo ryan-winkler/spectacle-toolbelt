@@ -1,4 +1,4 @@
-"""Vertical stitching for pre-captured scrolling screenshot frames."""
+"""Scrolling screenshot stitching for pre-captured frames."""
 
 from __future__ import annotations
 
@@ -78,6 +78,7 @@ class _JoinMatch:
 def stitch_images(
     images: Iterable[Image.Image],
     *,
+    direction: str = "vertical",
     min_confidence: float = 0.92,
     min_overlap_rows: int = 8,
     allow_partial: bool = True,
@@ -87,9 +88,15 @@ def stitch_images(
     max_total_input_pixels: int = DEFAULT_MAX_TOTAL_INPUT_PIXELS,
     max_output_pixels: int = DEFAULT_MAX_OUTPUT_PIXELS,
 ) -> StitchResult:
-    """Stitch screenshots captured in top-to-bottom scroll order."""
+    """Stitch screenshots captured in scroll order."""
+
+    if direction not in {"vertical", "horizontal"}:
+        raise StitchError("direction must be vertical or horizontal")
 
     frames = [_normalize_image(image) for image in images]
+    if direction == "horizontal":
+        frames = [_transpose_for_horizontal(frame) for frame in frames]
+
     if not frames:
         raise StitchError("at least one frame is required")
     _validate_limits(
@@ -181,6 +188,10 @@ def stitch_images(
             )
         )
 
+    if direction == "horizontal":
+        stitched = _transpose_for_horizontal(stitched)
+        diagnostics = [_horizontal_diagnostic(diagnostic) for diagnostic in diagnostics]
+
     return StitchResult(
         image=stitched,
         status=status,
@@ -197,6 +208,7 @@ def stitch_files(
     frame_paths: Iterable[str | Path],
     output_path: str | Path,
     *,
+    direction: str = "vertical",
     min_confidence: float = 0.92,
     min_overlap_rows: int = 8,
     allow_partial: bool = True,
@@ -241,6 +253,7 @@ def stitch_files(
 
     result = stitch_images(
         frames,
+        direction=direction,
         min_confidence=min_confidence,
         min_overlap_rows=min_overlap_rows,
         allow_partial=allow_partial,
@@ -261,6 +274,14 @@ def _normalize_image(image: Image.Image) -> Image.Image:
     if image.mode != "RGBA":
         return image.convert("RGBA")
     return image.copy()
+
+
+def _transpose_for_horizontal(image: Image.Image) -> Image.Image:
+    return image.transpose(Image.Transpose.TRANSPOSE)
+
+
+def _horizontal_diagnostic(diagnostic: JoinDiagnostic) -> JoinDiagnostic:
+    return replace(diagnostic, message=diagnostic.message.replace("vertical", "horizontal"))
 
 
 def _validate_limits(

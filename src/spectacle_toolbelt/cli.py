@@ -68,6 +68,49 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Use manual/panoramic mode instead of automatic scrolling.",
     )
+    scroll.add_argument(
+        "--mode",
+        choices=("manual", "auto-vertical", "auto-horizontal"),
+        help="Scrolling capture mode. Without this, the KDE launcher asks.",
+    )
+    scroll.add_argument("--max-frames", type=int, default=24, help="Maximum frames in one session.")
+    scroll.add_argument(
+        "--min-confidence",
+        type=float,
+        default=0.92,
+        help="Minimum overlap confidence before marking output partial.",
+    )
+    scroll.add_argument(
+        "--min-overlap-rows",
+        type=int,
+        default=8,
+        help="Minimum rows/columns required for a reliable overlap match.",
+    )
+    scroll.add_argument(
+        "--no-open-in-spectacle",
+        action="store_true",
+        help="Do not open the stitched result in Spectacle's editor.",
+    )
+    scroll.add_argument("--force", action="store_true", help="Overwrite existing output and debug files.")
+
+    web = subparsers.add_parser("web-fullpage", help="Capture an entire webpage.")
+    web.add_argument("--url", help="URL to capture. If omitted, Toolbelt tries the active tab, then prompts.")
+    web.add_argument("-o", "--output", type=Path, help="Output PNG path.")
+    web.add_argument("--width", type=int, default=1365, help="Browser viewport width for capture.")
+    web.add_argument("--timeout", type=float, default=30.0, help="Browser capture timeout in seconds.")
+    web.add_argument("--force", action="store_true", help="Overwrite an existing output file.")
+    web.add_argument("--no-copy", action="store_true", help="Do not copy the PNG to the clipboard.")
+    web.add_argument(
+        "--no-open-in-spectacle",
+        action="store_true",
+        help="Do not open the captured page in Spectacle's editor.",
+    )
+    web.add_argument(
+        "--no-active-tab",
+        action="store_true",
+        help="Skip active-tab resolution and prompt/use --url directly.",
+    )
+    web.add_argument("--no-prompt", action="store_true", help="Fail instead of prompting for a URL.")
 
     transform = subparsers.add_parser("transform", help="Run a named image transform preset.")
     transform.add_argument("image", nargs="?", type=Path, help="Input image path.")
@@ -169,12 +212,69 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.command == "scroll":
-        mode = "manual" if args.manual else "automatic"
-        print(
-            "scroll capture is scaffolded for v0.1; "
-            f"requested mode={mode}. Use `stitch` for captured frames today."
+        from spectacle_toolbelt.scroll.controller import (
+            ScrollCaptureError,
+            ScrollCaptureRequest,
+            run_scroll_capture,
         )
-        return 2
+
+        output_path = args.output
+        if output_path is None:
+            from spectacle_toolbelt.output.files import timestamped_output_path
+
+            output_path = timestamped_output_path()
+        try:
+            result = run_scroll_capture(
+                ScrollCaptureRequest(
+                    output=output_path,
+                    mode=args.mode or ("manual" if args.manual else None),
+                    manual=args.manual,
+                    max_frames=args.max_frames,
+                    min_confidence=args.min_confidence,
+                    min_overlap_rows=args.min_overlap_rows,
+                    open_in_spectacle=not args.no_open_in_spectacle,
+                    force=args.force,
+                )
+            )
+        except ScrollCaptureError as exc:
+            print(f"scroll capture failed: {exc}", file=sys.stderr)
+            return 1
+        print(f"{result.status}: wrote {result.output_path} from {result.frames} frames")
+        print(f"debug: wrote {result.debug_json_path}")
+        return 0 if result.status != "failed" else 1
+
+    if args.command == "web-fullpage":
+        from spectacle_toolbelt.web.fullpage import (
+            FullPageCaptureRequest,
+            WebCaptureError,
+            capture_fullpage_web,
+        )
+
+        output_path = args.output
+        if output_path is None:
+            from spectacle_toolbelt.output.files import timestamped_output_path
+
+            output_path = timestamped_output_path(prefix="Full Page Web Capture")
+        try:
+            result = capture_fullpage_web(
+                FullPageCaptureRequest(
+                    url=args.url,
+                    output=output_path,
+                    width=args.width,
+                    timeout_seconds=args.timeout,
+                    overwrite=args.force,
+                    copy_to_clipboard=not args.no_copy,
+                    open_in_spectacle=not args.no_open_in_spectacle,
+                    resolve_active_tab=not args.no_active_tab,
+                    prompt_for_url=not args.no_prompt,
+                )
+            )
+        except WebCaptureError as exc:
+            print(f"web capture failed: {exc}", file=sys.stderr)
+            return 1
+        clipboard = " copied to clipboard" if result.copied_to_clipboard else ""
+        print(f"{result.status}: wrote {result.output_path}{clipboard}")
+        return 0
 
     if args.command in {"transform", "redact", "ocr", "qr", "markdown"}:
         print(
