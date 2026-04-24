@@ -93,6 +93,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"stitch failed: {exc}", file=sys.stderr)
             return 1
         if args.debug_json:
+            args.debug_json.parent.mkdir(parents=True, exist_ok=True)
             args.debug_json.write_text(json.dumps(result.to_dict(), indent=2), encoding="utf-8")
         print(f"{result.status}: wrote {args.output} from {result.frames} frames")
         return 0 if result.status != "failed" else 1
