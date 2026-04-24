@@ -38,7 +38,7 @@ run() {
 
 is_toolbelt_owned() {
   local target=$1
-  grep -Fqx "$MARKER" "$target"
+  grep -Fqx "$MARKER" "$target" 2>/dev/null || grep -Fqx "# $MARKER" "$target" 2>/dev/null
 }
 
 refresh_kde_cache() {
@@ -89,6 +89,7 @@ service_menu_dirs=(
   "$data_home/kio/servicemenus"
   "$data_home/kservices5/ServiceMenus"
 )
+wrapper_file="$data_home/spectacle-toolbelt/bin/spectacle-toolbelt"
 
 for file in "${DESKTOP_FILES[@]}"; do
   target_file="$applications_dir/$file"
@@ -123,6 +124,17 @@ for service_menus_dir in "${service_menu_dirs[@]}"; do
     run rm -f "$target_file"
   done
 done
+
+if [[ -e "$wrapper_file" ]]; then
+  if ! is_toolbelt_owned "$wrapper_file"; then
+    printf 'Refusing to remove non-Toolbelt file: %s\n' "$wrapper_file" >&2
+    exit 1
+  fi
+  run rm -f "$wrapper_file"
+  rmdir "$data_home/spectacle-toolbelt/bin" "$data_home/spectacle-toolbelt" 2>/dev/null || true
+else
+  printf 'Not installed: %s\n' "$wrapper_file"
+fi
 
 printf 'Removed Spectacle Toolbelt desktop entries from %s\n' "$applications_dir"
 for service_menus_dir in "${service_menu_dirs[@]}"; do

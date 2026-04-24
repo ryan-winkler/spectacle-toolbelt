@@ -7,6 +7,8 @@ import subprocess
 import sys
 from dataclasses import dataclass
 
+from spectacle_toolbelt.capture.area import ScreenRect
+
 
 class DialogError(RuntimeError):
     """Raised when a required dialog interaction cannot continue."""
@@ -158,10 +160,12 @@ class KdeDialog:
             return
         print(message)
 
-    def next_scroll_action(self, frame_count: int, *, mode: str) -> str:
+    def next_scroll_action(self, frame_count: int, *, mode: str, avoid_rect: ScreenRect | None = None) -> str:
         message = (
             f"Captured {frame_count} frame{'s' if frame_count != 1 else ''}.\n\n"
-            "Scroll the content to the next position, then choose Capture Next.\n"
+            "Scroll the content behind this prompt to the next position, "
+            "then choose Capture Next.\n"
+            "Toolbelt will capture the same viewport rectangle again.\n"
             "Choose Done to stitch and open the result in Spectacle."
         )
         if mode != "manual":
@@ -175,6 +179,7 @@ class KdeDialog:
             result = self._run(
                 [
                     self._kdialog,
+                    *_geometry_args_avoiding(avoid_rect),
                     "--title",
                     "Spectacle Toolbelt Scrolling Capture",
                     "--yes-label",
@@ -212,3 +217,75 @@ class KdeDialog:
             stdout=completed.stdout,
             stderr=completed.stderr,
         )
+
+
+def _geometry_args_avoiding(avoid_rect: ScreenRect | None) -> list[str]:
+    if avoid_rect is None:
+        return []
+    geometry = _dialog_geometry_avoiding(avoid_rect)
+    return ["--geometry", geometry] if geometry else []
+
+
+def _dialog_geometry_avoiding(avoid_rect: ScreenRect) -> str | None:
+    monitors = _desktop_monitor_rects()
+    if not monitors:
+        return "560x220+24+24"
+
+    fallback: tuple[int, int, int, int] | None = None
+    for monitor in monitors:
+        dialog_width = min(560, max(320, monitor.width - 48))
+        dialog_height = min(220, max(160, monitor.height - 48))
+        candidates = [
+            (monitor.x + 24, monitor.y + 24),
+            (monitor.x + monitor.width - dialog_width - 24, monitor.y + 24),
+            (monitor.x + 24, monitor.y + monitor.height - dialog_height - 24),
+            (
+                monitor.x + monitor.width - dialog_width - 24,
+                monitor.y + monitor.height - dialog_height - 24,
+            ),
+        ]
+        if fallback is None:
+            fallback = (dialog_width, dialog_height, monitor.x + 24, monitor.y + 24)
+        for x, y in candidates:
+            candidate = ScreenRect(x, y, dialog_width, dialog_height)
+            if not _rects_overlap(candidate, avoid_rect):
+                return _geometry(dialog_width, dialog_height, x, y)
+    if fallback is None:
+        return None
+    return _geometry(*fallback)
+
+
+def _desktop_monitor_rects() -> list[ScreenRect]:
+    try:
+        import gi
+
+        gi.require_version("Gdk", "4.0")
+        from gi.repository import Gdk
+
+        display = Gdk.Display.get_default()
+        if display is None:
+            return []
+        monitors = display.get_monitors()
+        rects: list[ScreenRect] = []
+        for index in range(monitors.get_n_items()):
+            monitor = monitors.get_item(index)
+            if monitor is None:
+                continue
+            geometry = monitor.get_geometry()
+            rects.append(ScreenRect(int(geometry.x), int(geometry.y), int(geometry.width), int(geometry.height)))
+        return rects
+    except Exception:
+        return []
+
+
+def _rects_overlap(first: ScreenRect, second: ScreenRect) -> bool:
+    return not (
+        first.x + first.width <= second.x
+        or second.x + second.width <= first.x
+        or first.y + first.height <= second.y
+        or second.y + second.height <= first.y
+    )
+
+
+def _geometry(width: int, height: int, x: int, y: int) -> str:
+    return f"{width}x{height}{x:+d}{y:+d}"

@@ -12,8 +12,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Protocol
 
-from spectacle_toolbelt.capture.spectacle_adapter import CaptureError, capture_region
+from spectacle_toolbelt.capture.area import ScreenRect, capture_area
+from spectacle_toolbelt.capture.spectacle_adapter import CaptureError
 from spectacle_toolbelt.desktop.dialogs import DialogError, KdeDialog
+from spectacle_toolbelt.desktop.region_selector import select_screen_region
 from spectacle_toolbelt.output.editor_handoff import EditorHandoffError, open_in_spectacle
 from spectacle_toolbelt.output.files import timestamped_output_path
 from spectacle_toolbelt.scroll.stitch_engine import StitchError, stitch_files
@@ -35,10 +37,17 @@ class ScrollDialog(Protocol):
 
     def show_error(self, message: str, details: str | None = None) -> None: ...
 
-    def next_scroll_action(self, frame_count: int, *, mode: str) -> str: ...
+    def next_scroll_action(
+        self,
+        frame_count: int,
+        *,
+        mode: str,
+        avoid_rect: ScreenRect | None = None,
+    ) -> str: ...
 
 
-CaptureFrame = Callable[[Path], Path]
+SelectRegion = Callable[[], ScreenRect]
+CaptureArea = Callable[[Path, ScreenRect], Path]
 OpenEditor = Callable[[Path], object]
 
 
@@ -54,6 +63,7 @@ class ScrollCaptureRequest:
     open_in_spectacle: bool = True
     force: bool = False
     scroll_delay_seconds: float = 0.8
+    dialog_settle_seconds: float = 0.25
 
 
 @dataclass(frozen=True)
@@ -83,7 +93,8 @@ def run_scroll_capture(
     request: ScrollCaptureRequest,
     *,
     dialog: ScrollDialog | None = None,
-    capture_frame: CaptureFrame = capture_region,
+    select_region: SelectRegion = select_screen_region,
+    capture_area_frame: CaptureArea = capture_area,
     open_editor: OpenEditor = open_in_spectacle,
 ) -> ScrollCaptureOutcome:
     """Run a visible scrolling capture session."""
@@ -117,13 +128,18 @@ def run_scroll_capture(
         frames: list[Path] = []
 
         ui.show_message(
-            "Select the first scroll frame with Spectacle.\n\n"
-            "For best stitching, keep the same region for each frame and leave visible overlap."
+            "Drag the scrollable viewport once.\n\n"
+            "Toolbelt will capture this same rectangle for every frame while you scroll."
         )
-        frames.append(_capture_numbered_frame(frame_dir, len(frames), capture_frame))
+        try:
+            capture_rect = select_region()
+        except CaptureError as exc:
+            raise ScrollCaptureError(str(exc)) from exc
+        time.sleep(max(0.0, request.dialog_settle_seconds))
+        frames.append(_capture_numbered_area_frame(frame_dir, len(frames), capture_rect, capture_area_frame))
 
         while len(frames) < request.max_frames:
-            action = ui.next_scroll_action(len(frames), mode=mode)
+            action = ui.next_scroll_action(len(frames), mode=mode, avoid_rect=capture_rect)
             if action == "cancel":
                 raise ScrollCaptureError("scrolling capture cancelled")
             if action == "done":
@@ -131,15 +147,12 @@ def run_scroll_capture(
             if action != "capture-next":
                 raise ScrollCaptureError(f"unknown scrolling action: {action}")
 
-            if mode == "manual":
-                ui.show_message(
-                    "Scroll the content to the next position, then select the same region again."
-                )
-            else:
+            time.sleep(max(0.0, request.dialog_settle_seconds))
+            if mode != "manual":
                 _scroll_for_mode(mode)
                 time.sleep(max(0.0, request.scroll_delay_seconds))
 
-            frames.append(_capture_numbered_frame(frame_dir, len(frames), capture_frame))
+            frames.append(_capture_numbered_area_frame(frame_dir, len(frames), capture_rect, capture_area_frame))
 
         try:
             stitch_result = stitch_files(
@@ -172,10 +185,15 @@ def run_scroll_capture(
     )
 
 
-def _capture_numbered_frame(frame_dir: Path, index: int, capture_frame: CaptureFrame) -> Path:
+def _capture_numbered_area_frame(
+    frame_dir: Path,
+    index: int,
+    rect: ScreenRect,
+    capture_area_frame: CaptureArea,
+) -> Path:
     path = frame_dir / f"frame-{index + 1:03d}.png"
     try:
-        captured = capture_frame(path)
+        captured = capture_area_frame(path, rect)
     except CaptureError as exc:
         raise ScrollCaptureError(str(exc)) from exc
     if not captured.exists():

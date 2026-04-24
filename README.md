@@ -24,8 +24,8 @@ Current implementation:
 
 - `spectacle-toolbelt doctor` checks local capture and helper-tool support.
 - `spectacle-toolbelt scroll` starts a KDE-visible scrolling capture workflow
-  with mode choice, Spectacle region capture, Capture Next, Done, Cancel, frame
-  count, stitch diagnostics, and Spectacle editor handoff.
+  with mode choice, one-time viewport selection, Capture Next, Done, Cancel,
+  frame count, stitch diagnostics, and Spectacle editor handoff.
 - `spectacle-toolbelt web-fullpage` captures a complete webpage PNG. It tries
   active Chromium-family tab metadata first when available, then prompts for a
   URL. The installed launcher declares `Ctrl+Alt+W` as its KDE shortcut.
@@ -82,8 +82,8 @@ Toolbelt's launcher actions, CLI, and service menus are the bridge:
 The v0.1 target is a local workflow for capturing content that is taller than
 the visible screen:
 
-1. Select or capture a region with Spectacle.
-2. Capture multiple frames while the content scrolls.
+1. Select the scrolling viewport once.
+2. Capture multiple frames from that same rectangle while the content scrolls.
 3. Detect overlapping rows between consecutive frames.
 4. Stitch the frames into one PNG.
 5. Mark the result as partial when overlap confidence is too low.
@@ -91,11 +91,19 @@ the visible screen:
 The first external implementation path is intentionally conservative but usable:
 
 - Manual/panoramic mode is available now from the KDE launcher and CLI.
+- The viewport selector uses global desktop coordinates, so the selected
+  rectangle is not limited to a single monitor when a window spans displays.
+  On X11/non-Wayland sessions, mixed-scale monitor spans are rejected in the
+  selector because ImageMagick root-window crops cannot represent that viewport
+  as one stable rectangle.
 - Automatic vertical and horizontal modes are exposed. They use explicit X11
   scroll input when supported and fall back to manual mode on restricted Wayland
   sessions. Bidirectional capture remains reserved for native Spectacle/grid
   session support so Toolbelt does not advertise a mode it cannot stitch
   correctly.
+- On Plasma Wayland, fixed-region capture uses KWin's authorized ScreenShot2
+  API. Launch from the installed KDE entry or Spectacle app action, not an
+  unauthorised ad-hoc desktop file.
 - Stitching diagnostics should be inspectable so users can report artifacts
   without uploading sensitive screenshots.
 - Stitched output opens in Spectacle's existing editor for annotation, OCR, QR,
@@ -175,12 +183,16 @@ Requirements:
 - Python 3.10+
 - Pillow
 - websockets
+- GTK 4/PyGObject for one-time scrolling viewport selection
+- `dbus-python` for fixed-region capture on Plasma Wayland
 - `kdialog` for KDE-native launcher dialogs. Terminal CLI use can fall back to
   stdin prompts, but `.desktop` launcher workflows intentionally fail closed
   instead of hanging when no dialog tool is available.
 - Optional: Chromium, Google Chrome, or Chromium Browser for full-page web
   capture
 - Optional: `xdotool` for active-tab matching and automatic scrolling on X11
+- Optional on Wayland, required on X11/non-Wayland sessions: ImageMagick
+  `import` for fixed-region capture
 - Optional: ImageMagick 7 (`magick`) or ImageMagick 6 (`convert`)
 - Optional: `wl-copy`, `xclip`, or `xsel` for clipboard workflows
 - Optional: `notify-send` for desktop notifications
@@ -199,6 +211,13 @@ Install the KDE launchers and service menus into your user XDG data directories:
 ```bash
 scripts/install-local.sh --dry-run
 scripts/install-local.sh
+```
+
+If `import` is installed outside `PATH`, set the same command for installation
+and runtime:
+
+```bash
+SPECTACLE_TOOLBELT_IMPORT_COMMAND=/path/to/import scripts/install-local.sh
 ```
 
 Remove Toolbelt-owned local integration files:

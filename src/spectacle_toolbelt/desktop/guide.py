@@ -11,9 +11,9 @@ GUIDE_TEXT = """Spectacle Toolbelt is installed.
 Use it from the KDE launcher:
 
 1. Spectacle Toolbelt Scrolling Capture
-   Starts the visible scrolling capture workflow with mode choice,
-   Capture Next, Done, Cancel, frame count, stitching, and Spectacle editor
-   handoff.
+   Starts the visible scrolling capture workflow with mode choice, one-time
+   viewport selection, Capture Next, Done, Cancel, frame count, stitching, and
+   Spectacle editor handoff.
 
 2. Spectacle Toolbelt Full-Page Web Capture
    Captures the active Chromium-family tab when DevTools metadata is available,

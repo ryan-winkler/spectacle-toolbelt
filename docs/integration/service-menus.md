@@ -17,8 +17,8 @@ not modify Spectacle's system files.
 - `Spectacle Toolbelt Scrolling Capture`
   - runs `spectacle-toolbelt scroll`
   - starts the visible scrolling capture workflow
-  - presents mode selection, Capture Next, Done, Cancel, frame count, and
-    Spectacle editor handoff
+  - presents mode selection, one-time viewport selection, Capture Next, Done,
+    Cancel, frame count, and Spectacle editor handoff
 
 - `Spectacle Toolbelt Full-Page Web Capture`
   - runs `spectacle-toolbelt web-fullpage`

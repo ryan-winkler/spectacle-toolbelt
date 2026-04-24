@@ -71,6 +71,8 @@ def _tool(name: str, *, required: bool = False, note: str | None = None) -> Tool
 
 def run_doctor() -> DoctorReport:
     session_type = os.environ.get("XDG_SESSION_TYPE", "unknown")
+    fixed_region_wayland = session_type.casefold() == "wayland"
+    fixed_region_x11 = not fixed_region_wayland
     clipboard_candidates = (
         _tool("wl-copy", note="Wayland clipboard"),
         _tool("xclip", note="X11 clipboard"),
@@ -88,6 +90,17 @@ def run_doctor() -> DoctorReport:
         ),
         _tool("spectacle", required=True, note="capture adapter"),
         _tool("kdialog", note="required for non-terminal KDE Toolbelt launcher dialogs"),
+        _gtk4_check(required=True, note="GTK 4 region selector for capture-and-scroll"),
+        _python_module(
+            "dbus",
+            name="dbus-python",
+            required=fixed_region_wayland,
+            note="KWin fixed-region capture on Wayland",
+        ),
+        _imagemagick_import_check(
+            required=fixed_region_x11,
+            note="ImageMagick fixed-region capture on X11/non-Wayland sessions",
+        ),
         _first_available_tool(
             ("google-chrome", "chromium", "chromium-browser"),
             name="Chromium-family browser",
@@ -113,6 +126,9 @@ def _local_spectacle_launcher_checks() -> tuple[ToolCheck, ...]:
     spectacle_desktop = applications_dir / "org.kde.spectacle.desktop"
     if spectacle_desktop.exists():
         candidates.add(spectacle_desktop)
+    toolbelt_scroll = applications_dir / "io.github.ryanwinkler.spectacle-toolbelt-scroll.desktop"
+    if toolbelt_scroll.exists():
+        candidates.add(toolbelt_scroll)
     for path in sorted(candidates):
         try:
             content = path.read_text(encoding="utf-8")
@@ -147,6 +163,47 @@ def _first_available_tool(commands: tuple[str, ...], *, name: str, note: str | N
         if path:
             return ToolCheck(name=name, available=True, path=path, required=False, note=note)
     return ToolCheck(name=name, available=False, required=False, note=note)
+
+
+def _imagemagick_import_check(*, required: bool = False, note: str | None = None) -> ToolCheck:
+    configured = os.environ.get("SPECTACLE_TOOLBELT_IMPORT_COMMAND") or "import"
+    if "/" in configured:
+        path = configured if os.access(configured, os.X_OK) else None
+    else:
+        path = shutil.which(configured)
+    return ToolCheck(
+        name="import",
+        available=path is not None,
+        path=path,
+        required=required,
+        note=note,
+    )
+
+
+def _python_module(
+    module: str,
+    *,
+    name: str,
+    required: bool = False,
+    note: str | None = None,
+) -> ToolCheck:
+    try:
+        __import__(module)
+    except ImportError:
+        return ToolCheck(name=name, available=False, required=required, note=note)
+    return ToolCheck(name=name, available=True, required=required, note=note)
+
+
+def _gtk4_check(*, required: bool = False, note: str | None = None) -> ToolCheck:
+    try:
+        import gi
+
+        gi.require_version("Gtk", "4.0")
+        gi.require_version("Gdk", "4.0")
+        from gi.repository import Gdk, Gtk  # noqa: F401
+    except (ImportError, ValueError):
+        return ToolCheck(name="GTK 4/PyGObject", available=False, required=required, note=note)
+    return ToolCheck(name="GTK 4/PyGObject", available=True, required=required, note=note)
 
 
 def _xdg_data_home() -> Path:
