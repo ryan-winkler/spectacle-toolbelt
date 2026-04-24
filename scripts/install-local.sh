@@ -71,10 +71,15 @@ repo_root=$(CDPATH= cd -- "$script_dir/.." && pwd)
 source_dir="$repo_root/desktop"
 data_home="${XDG_DATA_HOME:-$HOME/.local/share}"
 applications_dir="$data_home/applications"
-service_menus_dir="$data_home/kio/servicemenus"
+service_menu_dirs=(
+  "$data_home/kio/servicemenus"
+  "$data_home/kservices5/ServiceMenus"
+)
 
 run install -d "$applications_dir"
-run install -d "$service_menus_dir"
+for service_menus_dir in "${service_menu_dirs[@]}"; do
+  run install -d "$service_menus_dir"
+done
 
 for file in "${DESKTOP_FILES[@]}"; do
   source_file="$source_dir/$file"
@@ -89,19 +94,23 @@ for file in "${DESKTOP_FILES[@]}"; do
   run install -m 0644 "$source_file" "$target_file"
 done
 
-for file in "${SERVICE_MENU_FILES[@]}"; do
-  source_file="$repo_root/servicemenus/$file"
-  target_file="$service_menus_dir/$file"
+for service_menus_dir in "${service_menu_dirs[@]}"; do
+  for file in "${SERVICE_MENU_FILES[@]}"; do
+    source_file="$repo_root/servicemenus/$file"
+    target_file="$service_menus_dir/$file"
 
-  if [[ ! -f "$source_file" ]]; then
-    printf 'Missing source service menu file: %s\n' "$source_file" >&2
-    exit 1
-  fi
+    if [[ ! -f "$source_file" ]]; then
+      printf 'Missing source service menu file: %s\n' "$source_file" >&2
+      exit 1
+    fi
 
-  require_owned_or_absent "$target_file"
-  run install -m 0644 "$source_file" "$target_file"
+    require_owned_or_absent "$target_file"
+    run install -m 0644 "$source_file" "$target_file"
+  done
 done
 
 printf 'Installed Spectacle Toolbelt desktop entries to %s\n' "$applications_dir"
-printf 'Installed Spectacle Toolbelt service menus to %s\n' "$service_menus_dir"
+for service_menus_dir in "${service_menu_dirs[@]}"; do
+  printf 'Installed Spectacle Toolbelt service menus to %s\n' "$service_menus_dir"
+done
 printf 'KDE should pick these up automatically; run kbuildsycoca6 manually if your launcher cache is stale.\n'

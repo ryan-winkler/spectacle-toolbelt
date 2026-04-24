@@ -41,7 +41,8 @@ def open_in_spectacle(image_path: str | Path) -> EditorHandoffCommand:
         raise EditorHandoffError(f"image is not a file: {path}")
     ensure_spectacle_available()
     command = build_edit_existing_command(path)
-    completed = subprocess.run(command.argv, check=False)
-    if completed.returncode != 0:
-        raise EditorHandoffError(f"Spectacle exited with {completed.returncode}")
+    try:
+        subprocess.Popen(command.argv, start_new_session=True)
+    except OSError as exc:
+        raise EditorHandoffError(f"could not launch Spectacle: {exc}") from exc
     return command

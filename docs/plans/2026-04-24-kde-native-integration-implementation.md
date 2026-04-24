@@ -198,7 +198,8 @@ Steps:
 
 3. Update `scripts/install-local.sh` and `scripts/uninstall-local.sh`.
    - Install desktop files to `$XDG_DATA_HOME/applications`.
-   - Install service menus to `$XDG_DATA_HOME/kio/servicemenus`.
+   - Install service menus to `$XDG_DATA_HOME/kio/servicemenus` for KF6 and
+     `$XDG_DATA_HOME/kservices5/ServiceMenus` for KF5.
    - Refuse to overwrite or remove non-Toolbelt files.
    - Keep `--dry-run`.
 

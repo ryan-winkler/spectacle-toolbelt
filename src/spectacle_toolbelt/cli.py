@@ -108,6 +108,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.debug_json:
             args.debug_json.parent.mkdir(parents=True, exist_ok=True)
             args.debug_json.write_text(json.dumps(result.to_dict(), indent=2), encoding="utf-8")
+        print(f"{result.status}: wrote {output_path} from {result.frames} frames")
         if args.open_in_spectacle:
             from spectacle_toolbelt.output.editor_handoff import (
                 EditorHandoffError,
@@ -118,8 +119,7 @@ def main(argv: list[str] | None = None) -> int:
                 open_in_spectacle(output_path)
             except EditorHandoffError as exc:
                 print(f"editor handoff failed: {exc}", file=sys.stderr)
-                return 1
-        print(f"{result.status}: wrote {output_path} from {result.frames} frames")
+                return 0 if result.status != "failed" else 1
         return 0 if result.status != "failed" else 1
 
     if args.command == "open-in-spectacle":

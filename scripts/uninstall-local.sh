@@ -58,7 +58,10 @@ done
 
 data_home="${XDG_DATA_HOME:-$HOME/.local/share}"
 applications_dir="$data_home/applications"
-service_menus_dir="$data_home/kio/servicemenus"
+service_menu_dirs=(
+  "$data_home/kio/servicemenus"
+  "$data_home/kservices5/ServiceMenus"
+)
 
 for file in "${DESKTOP_FILES[@]}"; do
   target_file="$applications_dir/$file"
@@ -76,21 +79,25 @@ for file in "${DESKTOP_FILES[@]}"; do
   run rm -f "$target_file"
 done
 
-for file in "${SERVICE_MENU_FILES[@]}"; do
-  target_file="$service_menus_dir/$file"
+for service_menus_dir in "${service_menu_dirs[@]}"; do
+  for file in "${SERVICE_MENU_FILES[@]}"; do
+    target_file="$service_menus_dir/$file"
 
-  if [[ ! -e "$target_file" ]]; then
-    printf 'Not installed: %s\n' "$target_file"
-    continue
-  fi
+    if [[ ! -e "$target_file" ]]; then
+      printf 'Not installed: %s\n' "$target_file"
+      continue
+    fi
 
-  if ! is_toolbelt_owned "$target_file"; then
-    printf 'Refusing to remove non-Toolbelt file: %s\n' "$target_file" >&2
-    exit 1
-  fi
+    if ! is_toolbelt_owned "$target_file"; then
+      printf 'Refusing to remove non-Toolbelt file: %s\n' "$target_file" >&2
+      exit 1
+    fi
 
-  run rm -f "$target_file"
+    run rm -f "$target_file"
+  done
 done
 
 printf 'Removed Spectacle Toolbelt desktop entries from %s\n' "$applications_dir"
-printf 'Removed Spectacle Toolbelt service menus from %s\n' "$service_menus_dir"
+for service_menus_dir in "${service_menu_dirs[@]}"; do
+  printf 'Removed Spectacle Toolbelt service menus from %s\n' "$service_menus_dir"
+done

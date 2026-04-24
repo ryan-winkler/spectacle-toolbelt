@@ -7,6 +7,7 @@ ServiceTypes=KonqPopupMenu/Plugin
 X-KDE-ServiceTypes=KonqPopupMenu/Plugin
 X-KDE-Priority=TopLevel
 X-KDE-Submenu=Spectacle Toolbelt
+X-KDE-MaxNumberOfUrls=1
 X-Spectacle-Toolbelt-Owned=true
 
 [Desktop Action OpenInSpectacle]

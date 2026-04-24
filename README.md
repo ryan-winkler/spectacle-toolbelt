@@ -21,8 +21,9 @@ documentation asset handling.
 Current scaffold:
 
 - `spectacle-toolbelt doctor` checks local capture and helper-tool support.
-- `spectacle-toolbelt stitch FRAME... --output OUTPUT.png` stitches
-  pre-captured scroll frames.
+- `spectacle-toolbelt stitch FRAME... [--output OUTPUT.png]` stitches
+  pre-captured scroll frames. Without `--output`, Toolbelt writes to the
+  Spectacle/XDG screenshots folder with a collision-resistant timestamped name.
 - `spectacle-toolbelt open-in-spectacle IMAGE` opens an image in Spectacle's
   native annotation editor via `spectacle --edit-existing`.
 - `spectacle-toolbelt scroll --manual --output OUTPUT.png` is the planned

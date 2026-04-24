@@ -30,10 +30,9 @@ def test_open_in_spectacle_runs_spectacle_for_existing_file(tmp_path) -> None:
 
     with (
         patch("spectacle_toolbelt.output.editor_handoff.shutil.which", return_value="/usr/bin/spectacle"),
-        patch("spectacle_toolbelt.output.editor_handoff.subprocess.run") as run,
+        patch("spectacle_toolbelt.output.editor_handoff.subprocess.Popen") as popen,
     ):
-        run.return_value.returncode = 0
         command = open_in_spectacle(image)
 
     assert command.argv == ("spectacle", "--new-instance", "--edit-existing", str(image))
-    run.assert_called_once_with(command.argv, check=False)
+    popen.assert_called_once_with(command.argv, start_new_session=True)

@@ -37,6 +37,14 @@ SERVICE_MENU_TARGET = InstallTarget(
     ),
 )
 
+KF5_SERVICE_MENU_TARGET = InstallTarget(
+    source_subdir="servicemenus",
+    destination_subdir="kservices5/ServiceMenus",
+    filenames=SERVICE_MENU_TARGET.filenames,
+)
+
+SERVICE_MENU_TARGETS = (SERVICE_MENU_TARGET, KF5_SERVICE_MENU_TARGET)
+
 
 def xdg_data_home(home: Path, env_value: str | None = None) -> Path:
     return Path(env_value) if env_value else home / ".local" / "share"

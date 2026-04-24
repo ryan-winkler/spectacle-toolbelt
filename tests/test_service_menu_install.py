@@ -6,6 +6,10 @@ from pathlib import Path
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+STITCH_SERVICE_MENU = REPO_ROOT / "servicemenus" / "io.github.ryanwinkler.spectacle-toolbelt-stitch.desktop"
+OPEN_IN_SPECTACLE_SERVICE_MENU = (
+    REPO_ROOT / "servicemenus" / "io.github.ryanwinkler.spectacle-toolbelt-open-in-spectacle.desktop"
+)
 
 
 def _run_script(name: str, xdg_data_home: Path, *args: str) -> subprocess.CompletedProcess[str]:
@@ -35,6 +39,8 @@ def test_install_and_uninstall_round_trip_in_temp_xdg_home(tmp_path) -> None:
         "applications/io.github.ryanwinkler.spectacle-toolbelt.desktop",
         "kio/servicemenus/io.github.ryanwinkler.spectacle-toolbelt-open-in-spectacle.desktop",
         "kio/servicemenus/io.github.ryanwinkler.spectacle-toolbelt-stitch.desktop",
+        "kservices5/ServiceMenus/io.github.ryanwinkler.spectacle-toolbelt-open-in-spectacle.desktop",
+        "kservices5/ServiceMenus/io.github.ryanwinkler.spectacle-toolbelt-stitch.desktop",
     ]
 
     uninstall = _run_script("uninstall-local.sh", tmp_path)
@@ -55,6 +61,18 @@ def test_install_refuses_to_overwrite_non_toolbelt_file(tmp_path) -> None:
     assert "Refusing to overwrite non-Toolbelt file" in install.stderr
 
 
+def test_install_refuses_to_overwrite_non_toolbelt_kf5_service_menu(tmp_path) -> None:
+    target_dir = tmp_path / "kservices5" / "ServiceMenus"
+    target_dir.mkdir(parents=True)
+    target = target_dir / "io.github.ryanwinkler.spectacle-toolbelt-stitch.desktop"
+    target.write_text("[Desktop Entry]\nName=Someone Else\n", encoding="utf-8")
+
+    install = _run_script("install-local.sh", tmp_path)
+
+    assert install.returncode == 1
+    assert "Refusing to overwrite non-Toolbelt file" in install.stderr
+
+
 def test_uninstall_refuses_to_remove_non_toolbelt_file(tmp_path) -> None:
     target_dir = tmp_path / "applications"
     target_dir.mkdir(parents=True)
@@ -65,3 +83,15 @@ def test_uninstall_refuses_to_remove_non_toolbelt_file(tmp_path) -> None:
 
     assert uninstall.returncode == 1
     assert "Refusing to remove non-Toolbelt file" in uninstall.stderr
+
+
+def test_stitch_service_menu_requires_multiple_files() -> None:
+    content = STITCH_SERVICE_MENU.read_text(encoding="utf-8")
+
+    assert "X-KDE-MinNumberOfUrls=2" in content
+
+
+def test_open_in_spectacle_service_menu_requires_one_file() -> None:
+    content = OPEN_IN_SPECTACLE_SERVICE_MENU.read_text(encoding="utf-8")
+
+    assert "X-KDE-MaxNumberOfUrls=1" in content
