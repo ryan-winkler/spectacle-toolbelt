@@ -8,9 +8,10 @@ X-KDE-ServiceTypes=KonqPopupMenu/Plugin
 X-KDE-Priority=TopLevel
 X-KDE-Submenu=Spectacle Toolbelt
 X-KDE-MinNumberOfUrls=2
+X-KDE-MaxNumberOfUrls=24
 X-Spectacle-Toolbelt-Owned=true
 
 [Desktop Action Stitch]
 Name=Stitch with Spectacle Toolbelt
 Icon=spectacle
-Exec=spectacle-toolbelt stitch %F --open-in-spectacle
+Exec=spectacle-toolbelt stitch --natural-sort --max-frames 24 --open-in-spectacle %F

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -39,6 +40,22 @@ def build_parser() -> argparse.ArgumentParser:
         "--open-in-spectacle",
         action="store_true",
         help="Open the stitched output in Spectacle's native editor.",
+    )
+    stitch.add_argument(
+        "--natural-sort",
+        action="store_true",
+        help="Sort frame paths naturally by filename before stitching.",
+    )
+    stitch.add_argument(
+        "--max-frames",
+        type=int,
+        default=24,
+        help="Maximum frame count accepted for one stitch operation.",
+    )
+    stitch.add_argument(
+        "--force",
+        action="store_true",
+        help="Overwrite existing output and debug files.",
     )
     stitch.add_argument("--debug-json", type=Path, help="Optional path for stitch diagnostics.")
 
@@ -95,19 +112,30 @@ def main(argv: list[str] | None = None) -> int:
         from spectacle_toolbelt.output.files import timestamped_output_path
 
         output_path = args.output or timestamped_output_path()
+        frames = sorted(args.frames, key=_natural_sort_key) if args.natural_sort else args.frames
+        if args.debug_json and args.debug_json.exists() and not args.force:
+            print(f"debug json already exists: {args.debug_json} (use --force to overwrite)", file=sys.stderr)
+            return 1
         try:
             result = stitch_files(
-                args.frames,
+                frames,
                 output_path,
                 min_confidence=args.min_confidence,
                 min_overlap_rows=args.min_overlap_rows,
+                max_frames=args.max_frames,
+                overwrite=args.force,
             )
         except StitchError as exc:
             print(f"stitch failed: {exc}", file=sys.stderr)
             return 1
         if args.debug_json:
             args.debug_json.parent.mkdir(parents=True, exist_ok=True)
-            args.debug_json.write_text(json.dumps(result.to_dict(), indent=2), encoding="utf-8")
+            debug_json = json.dumps(result.to_dict(), indent=2)
+            try:
+                _write_text(args.debug_json, debug_json, overwrite=args.force)
+            except FileExistsError:
+                print(f"debug json already exists: {args.debug_json} (use --force to overwrite)", file=sys.stderr)
+                return 1
         print(f"{result.status}: wrote {output_path} from {result.frames} frames")
         if args.open_in_spectacle:
             from spectacle_toolbelt.output.editor_handoff import (
@@ -150,6 +178,17 @@ def main(argv: list[str] | None = None) -> int:
 
     parser.error(f"unknown command: {args.command}")
     return 2
+
+
+def _natural_sort_key(path: Path) -> tuple[object, ...]:
+    parts = re.split(r"(\d+)", path.name.casefold())
+    return tuple(int(part) if part.isdigit() else part for part in parts)
+
+
+def _write_text(path: Path, content: str, *, overwrite: bool) -> None:
+    mode = "w" if overwrite else "x"
+    with path.open(mode, encoding="utf-8") as file:
+        file.write(content)
 
 
 if __name__ == "__main__":

@@ -13,9 +13,10 @@ surfaces. They do not modify Spectacle files.
   - only appears when exactly one image file is selected
 
 - `Stitch with Spectacle Toolbelt`
-  - runs `spectacle-toolbelt stitch %F --open-in-spectacle`
+  - runs `spectacle-toolbelt stitch --natural-sort --max-frames 24 --open-in-spectacle %F`
   - intended for multiple pre-captured scroll frames
-  - only appears when at least two image files are selected
+  - only appears when 2-24 image files are selected
+  - sorts selected image filenames naturally before stitching
 
 ## Install Location
 
@@ -45,3 +46,8 @@ Install and uninstall scripts only overwrite or remove files that contain:
 ```text
 X-Spectacle-Toolbelt-Owned=true
 ```
+
+Installed entries use the resolved Toolbelt executable path instead of relying
+on Dolphin or KIO inheriting a shell virtualenv. The installer refreshes KDE's
+service cache automatically when `kbuildsycoca6` or `kbuildsycoca5` is
+available.

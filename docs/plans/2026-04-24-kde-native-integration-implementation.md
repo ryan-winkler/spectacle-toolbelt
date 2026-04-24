@@ -1,7 +1,7 @@
 # KDE-Native Spectacle Toolbelt Integration Implementation Plan
 
 Date: 2026-04-24
-Status: Approved design, ready for execution
+Status: Toolbelt external integration implemented; upstream Spectacle candidate pending
 Owner: Codex
 Spec: `docs/specs/2026-04-24-kde-native-integration-design.md`
 
@@ -13,7 +13,7 @@ This plan covers the full known work, not just the fast external fallback:
 
 - correct Toolbelt’s public positioning so it no longer ignores Spectacle-owned annotation/OCR/QR/editor features
 - add KDE-standard Toolbelt fallback surfaces that compose with Spectacle
-- make `spectacle --edit-existing` the default post-stitch editor handoff
+- make `spectacle --edit-existing` the post-stitch editor handoff
 - add Dolphin/KIO service menus and shortcut documentation
 - produce an upstream-ready Spectacle scrolling capture proposal
 - prepare a Spectacle implementation worktree and source map
@@ -72,7 +72,6 @@ Purpose:
 - `src/spectacle_toolbelt/output/editor_handoff.py`
 - `src/spectacle_toolbelt/scroll/stitch_engine.py`
 - `src/spectacle_toolbelt/scroll/session.py`
-- `desktop/io.github.ryanwinkler.spectacle-toolbelt.desktop`
 - `servicemenus/io.github.ryanwinkler.spectacle-toolbelt-stitch.desktop`
 - `servicemenus/io.github.ryanwinkler.spectacle-toolbelt-open-in-spectacle.desktop`
 - `scripts/install-local.sh`
@@ -126,7 +125,7 @@ Steps:
    - Replace “Toolbelt handles OCR/redaction/documentation capture” language with “Toolbelt orchestrates around Spectacle-owned annotation/OCR/QR/editor surfaces.”
    - Add a `What Spectacle Already Owns` section.
    - Add a `Native GUI Direction` section.
-   - State that external desktop/service-menu UX is a bridge, not the final product.
+   - State that external service-menu UX is a bridge, not the final product.
 
 2. Add `docs/integration/spectacle-feature-map.md`.
    - Map each proposed Toolbelt feature to:
@@ -197,10 +196,12 @@ Steps:
    - Use `spectacle-toolbelt open-in-spectacle %f`.
 
 3. Update `scripts/install-local.sh` and `scripts/uninstall-local.sh`.
-   - Install desktop files to `$XDG_DATA_HOME/applications`.
    - Install service menus to `$XDG_DATA_HOME/kio/servicemenus` for KF6 and
      `$XDG_DATA_HOME/kservices5/ServiceMenus` for KF5.
+   - Rewrite installed `Exec=` lines to the resolved Toolbelt executable so KDE does not need an activated shell virtualenv.
+   - Clean up older Toolbelt-owned launcher stubs from `$XDG_DATA_HOME/applications`.
    - Refuse to overwrite or remove non-Toolbelt files.
+   - Refresh the KDE service cache with `kbuildsycoca6` or `kbuildsycoca5` when available.
    - Keep `--dry-run`.
 
 4. Add `src/spectacle_toolbelt/desktop/service_menu.py`.
@@ -223,9 +224,8 @@ Verification:
 
 ```bash
 bash -n scripts/install-local.sh scripts/uninstall-local.sh
-desktop-file-validate desktop/*.desktop
 rg "Type=Service|ServiceTypes=KonqPopupMenu/Plugin|X-Spectacle-Toolbelt-Owned=true" servicemenus/*.desktop
-tmpdir=$(mktemp -d); XDG_DATA_HOME="$tmpdir" bash scripts/install-local.sh; find "$tmpdir" -type f | sort; XDG_DATA_HOME="$tmpdir" bash scripts/uninstall-local.sh; find "$tmpdir" -type f | sort; rm -rf "$tmpdir"
+tmpdir=$(mktemp -d); SPECTACLE_TOOLBELT_COMMAND="$PWD/.venv/bin/spectacle-toolbelt" XDG_DATA_HOME="$tmpdir" bash scripts/install-local.sh; find "$tmpdir" -type f | sort; SPECTACLE_TOOLBELT_COMMAND="$PWD/.venv/bin/spectacle-toolbelt" XDG_DATA_HOME="$tmpdir" bash scripts/uninstall-local.sh; find "$tmpdir" -type f | sort; rm -rf "$tmpdir"
 .venv/bin/python -m pytest tests/test_service_menu_install.py
 ```
 
@@ -418,7 +418,6 @@ cd /home/ryan/code/spectacle-toolbelt
 .venv/bin/python -m pytest
 .venv/bin/python -m spectacle_toolbelt.cli --help
 .venv/bin/python -m spectacle_toolbelt.cli doctor
-desktop-file-validate desktop/*.desktop
 rg "Type=Service|ServiceTypes=KonqPopupMenu/Plugin|X-Spectacle-Toolbelt-Owned=true" servicemenus/*.desktop
 bash scripts/install-local.sh --dry-run
 bash scripts/uninstall-local.sh --dry-run

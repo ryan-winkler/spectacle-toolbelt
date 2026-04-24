@@ -1,4 +1,4 @@
-"""KDE desktop and service-menu install target helpers."""
+"""KDE service-menu install target helpers."""
 
 from __future__ import annotations
 
@@ -15,18 +15,6 @@ class InstallTarget:
     destination_subdir: str
     filenames: tuple[str, ...]
 
-
-DESKTOP_TARGET = InstallTarget(
-    source_subdir="desktop",
-    destination_subdir="applications",
-    filenames=(
-        "io.github.ryanwinkler.spectacle-toolbelt.desktop",
-        "io.github.ryanwinkler.spectacle-toolbelt-scroll.desktop",
-        "io.github.ryanwinkler.spectacle-toolbelt-transform.desktop",
-        "io.github.ryanwinkler.spectacle-toolbelt-redact.desktop",
-        "io.github.ryanwinkler.spectacle-toolbelt-copy-markdown.desktop",
-    ),
-)
 
 SERVICE_MENU_TARGET = InstallTarget(
     source_subdir="servicemenus",

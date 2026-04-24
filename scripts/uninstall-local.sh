@@ -39,6 +39,31 @@ is_toolbelt_owned() {
   grep -Fqx "$MARKER" "$target"
 }
 
+refresh_kde_cache() {
+  local cache_tool=""
+  if command -v kbuildsycoca6 >/dev/null 2>&1; then
+    cache_tool=$(command -v kbuildsycoca6)
+  elif command -v kbuildsycoca5 >/dev/null 2>&1; then
+    cache_tool=$(command -v kbuildsycoca5)
+  fi
+
+  if [[ -z "$cache_tool" ]]; then
+    printf 'KDE service cache refresh skipped: kbuildsycoca6/kbuildsycoca5 not found.\n'
+    return 0
+  fi
+
+  if [[ "$dry_run" == "true" ]]; then
+    print_cmd "$cache_tool"
+    return 0
+  fi
+
+  if "$cache_tool" >/dev/null 2>&1; then
+    printf 'Refreshed KDE service cache with %s\n' "$cache_tool"
+  else
+    printf 'Warning: KDE service cache refresh failed with %s; run it manually if menus do not disappear.\n' "$cache_tool" >&2
+  fi
+}
+
 while (($#)); do
   case "$1" in
     --dry-run)
@@ -97,7 +122,8 @@ for service_menus_dir in "${service_menu_dirs[@]}"; do
   done
 done
 
-printf 'Removed Spectacle Toolbelt desktop entries from %s\n' "$applications_dir"
+printf 'Removed legacy Spectacle Toolbelt desktop entries from %s\n' "$applications_dir"
 for service_menus_dir in "${service_menu_dirs[@]}"; do
   printf 'Removed Spectacle Toolbelt service menus from %s\n' "$service_menus_dir"
 done
+refresh_kde_cache

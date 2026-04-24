@@ -8,6 +8,11 @@ from typing import Iterable
 
 from PIL import Image, UnidentifiedImageError
 
+DEFAULT_MAX_FRAMES = 24
+DEFAULT_MAX_FRAME_PIXELS = 50_000_000
+DEFAULT_MAX_TOTAL_INPUT_PIXELS = 180_000_000
+DEFAULT_MAX_OUTPUT_PIXELS = 180_000_000
+
 
 class StitchError(Exception):
     """Raised when frames cannot be stitched safely."""
@@ -77,16 +82,28 @@ def stitch_images(
     min_overlap_rows: int = 8,
     allow_partial: bool = True,
     stop_on_duplicate: bool = True,
+    max_frames: int = DEFAULT_MAX_FRAMES,
+    max_frame_pixels: int = DEFAULT_MAX_FRAME_PIXELS,
+    max_total_input_pixels: int = DEFAULT_MAX_TOTAL_INPUT_PIXELS,
+    max_output_pixels: int = DEFAULT_MAX_OUTPUT_PIXELS,
 ) -> StitchResult:
     """Stitch screenshots captured in top-to-bottom scroll order."""
 
     frames = [_normalize_image(image) for image in images]
     if not frames:
         raise StitchError("at least one frame is required")
+    _validate_limits(
+        frames,
+        max_frames=max_frames,
+        max_frame_pixels=max_frame_pixels,
+        max_total_input_pixels=max_total_input_pixels,
+    )
     if not 0.0 <= min_confidence <= 1.0:
         raise StitchError("min_confidence must be between 0.0 and 1.0")
     if min_overlap_rows < 1:
         raise StitchError("min_overlap_rows must be at least 1")
+    if max_output_pixels < 1:
+        raise StitchError("max_output_pixels must be at least 1")
 
     width = frames[0].width
     for index, frame in enumerate(frames):
@@ -96,6 +113,7 @@ def stitch_images(
             )
 
     stitched = frames[0].copy()
+    _ensure_output_within_limit(stitched, max_output_pixels=max_output_pixels)
     diagnostics: list[JoinDiagnostic] = []
     status = "complete"
     stitched_frames = 1
@@ -128,6 +146,7 @@ def stitch_images(
         if match.status == "joined":
             appended_rows = frame.height - match.overlap_rows
             stitched = _append_frame(stitched, frame, crop_top=match.overlap_rows)
+            _ensure_output_within_limit(stitched, max_output_pixels=max_output_pixels)
             stitched_frames += 1
             diagnostics.append(
                 JoinDiagnostic(
@@ -148,6 +167,7 @@ def stitch_images(
             )
 
         stitched = _append_frame(stitched, frame, crop_top=0)
+        _ensure_output_within_limit(stitched, max_output_pixels=max_output_pixels)
         stitched_frames += 1
         status = "partial"
         diagnostics.append(
@@ -180,15 +200,40 @@ def stitch_files(
     min_confidence: float = 0.92,
     min_overlap_rows: int = 8,
     allow_partial: bool = True,
+    overwrite: bool = False,
+    max_frames: int = DEFAULT_MAX_FRAMES,
+    max_frame_pixels: int = DEFAULT_MAX_FRAME_PIXELS,
+    max_total_input_pixels: int = DEFAULT_MAX_TOTAL_INPUT_PIXELS,
+    max_output_pixels: int = DEFAULT_MAX_OUTPUT_PIXELS,
 ) -> StitchResult:
     """Load frame files, stitch them, and write the resulting image."""
 
     paths = [Path(path) for path in frame_paths]
+    if len(paths) > max_frames:
+        raise StitchError(f"too many frames: {len(paths)} exceeds max_frames {max_frames}")
+
+    output = Path(output_path)
+    if output.exists() and not overwrite:
+        raise StitchError(f"output already exists: {output} (use --force to overwrite)")
+
     frames: list[Image.Image] = []
+    total_pixels = 0
     for path in paths:
         try:
             with Image.open(path) as image:
-                frames.append(_normalize_image(image))
+                frame_pixels = _pixel_count(image)
+                if frame_pixels > max_frame_pixels:
+                    raise StitchError(
+                        f"frame is too large: {path} has {frame_pixels} pixels, "
+                        f"limit is {max_frame_pixels}"
+                    )
+                total_pixels += frame_pixels
+                if total_pixels > max_total_input_pixels:
+                    raise StitchError(
+                        f"input set is too large: {total_pixels} pixels, "
+                        f"limit is {max_total_input_pixels}"
+                    )
+                frames.append(image.copy())
         except FileNotFoundError as exc:
             raise StitchError(f"frame does not exist: {path}") from exc
         except (OSError, UnidentifiedImageError) as exc:
@@ -199,11 +244,14 @@ def stitch_files(
         min_confidence=min_confidence,
         min_overlap_rows=min_overlap_rows,
         allow_partial=allow_partial,
+        max_frames=max_frames,
+        max_frame_pixels=max_frame_pixels,
+        max_total_input_pixels=max_total_input_pixels,
+        max_output_pixels=max_output_pixels,
     )
 
-    output = Path(output_path)
     output.parent.mkdir(parents=True, exist_ok=True)
-    result.image.save(output)
+    _save_image(result.image, output, overwrite=overwrite)
     return replace(result, output_path=str(output))
 
 
@@ -213,6 +261,69 @@ def _normalize_image(image: Image.Image) -> Image.Image:
     if image.mode != "RGBA":
         return image.convert("RGBA")
     return image.copy()
+
+
+def _validate_limits(
+    frames: list[Image.Image],
+    *,
+    max_frames: int,
+    max_frame_pixels: int,
+    max_total_input_pixels: int,
+) -> None:
+    if max_frames < 1:
+        raise StitchError("max_frames must be at least 1")
+    if max_frame_pixels < 1:
+        raise StitchError("max_frame_pixels must be at least 1")
+    if max_total_input_pixels < 1:
+        raise StitchError("max_total_input_pixels must be at least 1")
+    if len(frames) > max_frames:
+        raise StitchError(f"too many frames: {len(frames)} exceeds max_frames {max_frames}")
+
+    total_pixels = 0
+    for index, frame in enumerate(frames):
+        frame_pixels = _pixel_count(frame)
+        if frame_pixels > max_frame_pixels:
+            raise StitchError(
+                f"frame {index} is too large: {frame_pixels} pixels, limit is {max_frame_pixels}"
+            )
+        total_pixels += frame_pixels
+        if total_pixels > max_total_input_pixels:
+            raise StitchError(
+                f"input set is too large: {total_pixels} pixels, limit is {max_total_input_pixels}"
+            )
+
+
+def _pixel_count(image: Image.Image) -> int:
+    return image.width * image.height
+
+
+def _ensure_output_within_limit(image: Image.Image, *, max_output_pixels: int) -> None:
+    output_pixels = _pixel_count(image)
+    if output_pixels > max_output_pixels:
+        raise StitchError(
+            f"stitched output is too large: {output_pixels} pixels, limit is {max_output_pixels}"
+        )
+
+
+def _save_image(image: Image.Image, output: Path, *, overwrite: bool) -> None:
+    if overwrite:
+        image.save(output)
+        return
+
+    try:
+        with output.open("xb") as file:
+            image.save(file, format=_output_format(output))
+    except FileExistsError as exc:
+        raise StitchError(f"output already exists: {output} (use --force to overwrite)") from exc
+
+
+def _output_format(output: Path) -> str:
+    suffix = output.suffix.lower()
+    if suffix in {".jpg", ".jpeg"}:
+        return "JPEG"
+    if suffix == ".webp":
+        return "WEBP"
+    return "PNG"
 
 
 def _find_join(

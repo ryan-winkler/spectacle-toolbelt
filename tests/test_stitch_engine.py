@@ -118,3 +118,40 @@ def test_stitch_files_writes_output_and_result_serializes(tmp_path) -> None:
     assert serialized["diagnostics"] == [result.diagnostics[0].to_dict()]
     json.dumps(serialized)
     assert isinstance(result, StitchResult)
+
+
+def test_stitch_files_refuses_existing_output_without_force(tmp_path) -> None:
+    frame_path = tmp_path / "frame.png"
+    output_path = tmp_path / "stitched.png"
+    _striped_image(4, 4).save(frame_path)
+    output_path.write_bytes(b"existing")
+
+    with pytest.raises(StitchError, match="output already exists"):
+        stitch_files([frame_path], output_path)
+
+
+def test_stitch_files_can_force_overwrite_existing_output(tmp_path) -> None:
+    frame_path = tmp_path / "frame.png"
+    output_path = tmp_path / "stitched.png"
+    _striped_image(4, 4).save(frame_path)
+    output_path.write_bytes(b"existing")
+
+    result = stitch_files([frame_path], output_path, overwrite=True)
+
+    assert result.output_path == str(output_path)
+    assert output_path.read_bytes() != b"existing"
+
+
+def test_stitch_images_enforces_frame_count_limit() -> None:
+    frames = [_striped_image(2, 2), _striped_image(2, 2), _striped_image(2, 2)]
+
+    with pytest.raises(StitchError, match="too many frames"):
+        stitch_images(frames, max_frames=2)
+
+
+def test_stitch_images_enforces_output_pixel_limit() -> None:
+    first = Image.new("RGBA", (3, 4), (255, 0, 0, 255))
+    second = Image.new("RGBA", (3, 4), (0, 0, 255, 255))
+
+    with pytest.raises(StitchError, match="stitched output is too large"):
+        stitch_images([first, second], min_overlap_rows=1, max_output_pixels=20)

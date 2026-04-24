@@ -4,9 +4,9 @@ Spectacle Toolbelt is a companion extension kit for KDE Spectacle. It is not a
 fork, replacement, or patched Spectacle build.
 
 The project adds power-user workflow glue around Spectacle through normal KDE
-integration points: command-line tools, local launchers, desktop actions,
-Dolphin/KIO service menus, and documented shortcut recipes. Spectacle remains
-the screenshot application and the intended native GUI home for mature features.
+integration points: command-line tools, Dolphin/KIO service menus, and
+documented shortcut recipes. Spectacle remains the screenshot application and
+the intended native GUI home for mature features.
 
 Toolbelt does not replace Spectacle's annotation editor, OCR action, QR scan
 flow, desktop actions, D-Bus capture surface, or KGlobalAccel shortcuts. It
@@ -30,10 +30,11 @@ Current scaffold:
   user-facing scrolling workflow and currently reports that the workflow is
   still scaffolded.
 - `transform`, `redact`, `ocr`, `qr`, and `markdown` commands are present as
-  roadmap stubs so desktop actions and issue reports can use stable names from
-  the start. They are not claims that Toolbelt owns Spectacle-native features.
-- Desktop integration installs Toolbelt-owned launchers only. It does not edit
-  Spectacle files, KDE system files, or user shortcuts.
+  CLI roadmap stubs so issue reports can use stable names from the start. They
+  are not installed into the GUI and are not claims that Toolbelt owns
+  Spectacle-native features.
+- Desktop integration installs working Toolbelt-owned service menus only. It
+  does not edit Spectacle files, KDE system files, or user shortcuts.
 
 ## What Spectacle Already Owns
 
@@ -61,7 +62,7 @@ parallel app. For scrolling capture, that means a Spectacle capture mode/action,
 selection overlay controls, Done/Cancel, progress, frame count, partial-result
 states, and final handoff to Spectacle's editor.
 
-Toolbelt's CLI, desktop files, and service menus are the bridge:
+Toolbelt's CLI and service menus are the bridge:
 
 - prove algorithms and edge cases
 - generate diagnostics and fixtures
@@ -168,24 +169,27 @@ python -m pip install -e '.[dev]'
 spectacle-toolbelt doctor
 ```
 
-Install desktop launchers into your user XDG applications directory:
+Install KDE service menus into your user XDG data directories:
 
 ```bash
 scripts/install-local.sh --dry-run
 scripts/install-local.sh
 ```
 
-Remove only Toolbelt-owned desktop launchers:
+Remove Toolbelt-owned local integration files:
 
 ```bash
 scripts/uninstall-local.sh --dry-run
 scripts/uninstall-local.sh
 ```
 
-The install scripts copy only the `.desktop` files shipped in this repository.
-They also install Toolbelt-owned Dolphin/KIO service menus when present. They
-refuse to overwrite or delete a target file unless it contains the
-`X-Spectacle-Toolbelt-Owned=true` marker.
+The install scripts install only working Dolphin/KIO service-menu surfaces and
+clean up older Toolbelt-owned launcher stubs. They refuse to overwrite or delete
+a target file unless it contains the `X-Spectacle-Toolbelt-Owned=true` marker.
+Installed entries are rewritten to use the resolved Toolbelt executable, so KDE
+does not need to inherit your activated virtualenv. The scripts refresh KDE's
+service cache automatically when `kbuildsycoca6` or `kbuildsycoca5` is
+available.
 
 ## Development
 
@@ -205,14 +209,10 @@ python -m pytest
 bash -n scripts/install-local.sh scripts/uninstall-local.sh
 ```
 
-If the `tests/` directory has not been created yet, `pytest` may report that no
-test path exists. The compile and shell checks are still useful smoke tests for
-the current scaffold.
-
-Validate desktop files when `desktop-file-validate` is installed:
+Check KDE service-menu structure:
 
 ```bash
-desktop-file-validate desktop/*.desktop
+rg "Type=Service|ServiceTypes=KonqPopupMenu/Plugin|X-Spectacle-Toolbelt-Owned=true" servicemenus/*.desktop
 ```
 
 ## Privacy and Security

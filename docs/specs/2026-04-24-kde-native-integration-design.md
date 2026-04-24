@@ -210,7 +210,6 @@ Correct framing:
 These can ship in Toolbelt without changing Spectacle:
 
 - CLI commands
-- desktop files
 - Dolphin/KIO service menus
 - KRunner/global shortcut recipes
 - `spectacle --edit-existing` handoff
@@ -232,7 +231,7 @@ These require Spectacle changes:
 
 ### Option A: External Toolbelt Polishing
 
-Keep Toolbelt external and improve desktop/service-menu integration.
+Keep Toolbelt external and improve service-menu integration.
 
 Pros:
 
